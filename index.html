@@ -1340,7 +1340,7 @@ const NODEKINDS=['vent','sap','gold','scrap'];
 const U=o=>Object.assign({pop:1,lvl:1,arm:0,cd:1,rng:1,cost:[50,0],time:18},o);
 const TYPES={
   minatore:U({name:'Minatore',cost:[50,0],time:12,hp:90,dps:5,spd:2.6,arm:.15,cd:1.2,worker:{carry:10,gt:2.4},bldg:.5,info:'Raccoglie magma e costruisce. Lento, ma porta carichi pesanti.'}),
-  fuciliere:U({name:'Fuciliere corazzato',cost:[95,0],pop:2,time:20,hp:215,dps:12,rng:5,spd:2.5,arm:.25,cd:1.2,proj:'bullet',info:'Fanteria corazzata con fucile, il nerbo dell’esercito.'}),
+  fuciliere:U({name:'Fuciliere corazzato',cost:[125,0],pop:2,time:20,hp:215,dps:12,rng:5,spd:2.5,arm:.25,cd:1.2,proj:'bullet',info:'Fanteria corazzata con fucile, il nerbo dell’esercito.'}),
   lanciafiamme:U({name:'Lanciafiamme',lvl:2,cost:[140,0],pop:2,time:24,hp:240,dps:14,rng:2.6,spd:2.4,arm:.25,cd:.5,aoe:1.4,pierce:.6,proj:'flame',info:'Fuoco ad area che ignora parte della corazza. Ottimo contro i gruppi.'}),
   mortaio:U({name:'Mortaio cingolato',lvl:2,cost:[190,0],pop:3,time:30,hp:200,dps:17,rng:9.5,minRng:3,spd:1.8,arm:.2,cd:3,aoe:2,bldg:2.5,proj:'shell',big:1,info:'Artiglieria a lunga gittata, devastante contro gli edifici. Non spara da vicino.'}),
   magminator:U({name:'Magminator',lvl:2,cost:[420,0],pop:6,time:55,hp:1150,dps:30,rng:4.5,spd:1.9,arm:.4,cd:1.5,aoe:1.6,bldg:1.5,proj:'magma',big:1,elite:1,info:'Colosso cingolato alimentato a magma. Lento e quasi inarrestabile.'}),
@@ -1427,7 +1427,7 @@ const COMP={durmagh:{fuciliere:3,lanciafiamme:2,mortaio:1.2,magminator:1},thalre
 /* ritocchi di bilanciamento dopo le simulazioni IA contro IA */
 const RACE_HP_DEFAULT={durmagh:.91,thalren:1.05,vaelrith:1.14,scrappers:.93};
 Object.assign(BT.bastione,{cost:[160,0],hp:900,def:{dps:16,rng:7.5,cd:1.3,proj:'bullet'}});
-Object.assign(TYPES.fuciliere,{cost:[125,0],hp:200});
+Object.assign(TYPES.fuciliere,{hp:200}); /* prezzo: solo in data.js (125) */
 Object.assign(TYPES.mortaio,{dps:14});
 Object.assign(TYPES.guerriero,{hp:145});
 Object.assign(TYPES.arciere,{dps:12});
