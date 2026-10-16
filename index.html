@@ -1866,7 +1866,7 @@ const WATER=[];
 function addLandmarks(G){const R=rng(303+MG.seed);const smk=buildMap2(G);
   for(let k=0;k<18;k++){const x=(R()<.5?-1:1)*(14+R()*10),z=(R()<.5?-1:1)*(4+R()*9);if(region(x,z)!=='mid'||riverD(x,z)<3.5||nearResource(x,z,3.5)||blocked(x,z,4)||inBase(x,z))continue;meadow(G,x,z,R);}
   for(let k=0;k<30;k++){const x=(R()<.5?-1:1)*(25+R()*14),z=-28+R()*56;if(!GREEN[region(x,z)]||riverD(x,z)<3||nearResource(x,z,3)||blocked(x,z,3.5))continue;logStump(G,x,z,R);}
-  for(let k=0;k<40;k++){const x=(R()<.5?-1:1)*(25+R()*13),z=-28+R()*56;if(!HOT[region(x,z)]||riverD(x,z)<3||nearResource(x,z,3)||blocked(x,z,3))continue;const c=new THREE.Group();c.position.set(x,0,z);G.add(c);for(let i=0;i<3;i++){const s=add(c,new THREE.OctahedronGeometry(.25+R()*.3,0),glowMat(1.4,.5,.2),(R()-.5)*.8,.25,(R()-.5)*.8);s.scale.y=1.8;s.castShadow=false;}}
+  /* (tolti i 'cristalli di lava': punte arancioni piatte, sembravano macchie senza senso accanto ai disegni PixelLab) */
   return smk;}
 function blocked(x,z,r){return BLOCKERS.some(b=>Math.hypot(b.x-x,b.z-z)<b.r+r);}
 const ENVANIM={jacks:[]};
