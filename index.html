@@ -1913,7 +1913,7 @@ function buildAtmosphere(scene){
   /* dirigibili che solcano il cielo */
   /* dirigibili disegnati con PixelLab (animati, rivolti a sinistra: si capovolgono quando vanno a destra) */
   if(typeof pxAnimTex==='function'&&pxAnimTex('dirig')){for(let i=0;i<3;i++){const T=pxAnimTex(i===1?'dirig2':'dirig');const s=new THREE.Sprite(new THREE.SpriteMaterial({map:T.tex,alphaTest:.5}));
-      const w=3.4+i*.6;s.scale.set(w,w*T.ar,1);s.userData={r:24+i*9,h:21+i*2,sp:.03+i*.01,ph:i*2.1,spr:T};scene.add(s);ATMO.ships.push(s);}}
+      const w=3.4+i*.6;s.scale.set(w,w*T.ar,1);s.userData={r:12+i*6,h:14+i*1.5,sp:.035+i*.01,ph:i*2.1,spr:T};scene.add(s);ATMO.ships.push(s);}}
   else{
   const env=[0xb08a5a,0x8a5a3a,0x6a7a7a];
   for(let i=0;i<3;i++){const s=new THREE.Group();const c=env[i];
@@ -1932,7 +1932,8 @@ function buildAtmosphere(scene){
   for(let i=0;i<12;i++){const t=nearest(new THREE.CanvasTexture(bc));t.repeat.set(.5,1);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,alphaTest:.5}));sp.scale.set(1.4,.7,1);sp.userData={tex:t,c:i%3,o:(i%4)*.9,ph:Math.random()*6,rad:6+Math.random()*3};scene.add(sp);ATMO.birds.push(sp);}}
 function updateAtmosphere(t,dt){if(ATMO.clouds){const m=ATMO.clouds.material.map;m.offset.x=t*.006;m.offset.y=t*.0025;}
   ATMO.ships.forEach(s=>{const u=s.userData;const a=t*u.sp+u.ph;const x=Math.cos(a)*u.r*1.35,z=Math.sin(a)*u.r*.75;
-    if(u.spr){s.position.set(x,u.h,z);const T=u.spr,f=((Math.floor(t*5+u.ph*3)%T.n)+T.n)%T.n,right=-Math.sin(a)*u.sp>0;T.tex.repeat.x=(right?-1:1)/T.n;T.tex.offset.x=(f+(right?1:0))/T.n;return;}
+    /* la telecamera e' inclinata di 46 gradi: un oggetto a quota h appare spostato di h/tan(46) verso l'alto dello schermo (nord), quindi lo si sposta a sud della stessa misura */
+    if(u.spr){s.position.set(x,u.h,z+u.h*.966);const T=u.spr,f=((Math.floor(t*5+u.ph*3)%T.n)+T.n)%T.n,right=-Math.sin(a)*u.sp>0;T.tex.repeat.x=(right?-1:1)/T.n;T.tex.offset.x=(f+(right?1:0))/T.n;return;}
     s.position.set(x,u.h+Math.sin(t*.5+u.ph)*.4,z);s.rotation.y=-a-Math.PI/2;s.rotation.z=Math.sin(t*.4+u.ph)*.03;u.prop.rotation.x+=dt*8;});
   ATMO.birds.forEach(b=>{const u=b.userData;const cx=[-18,12,30][u.c],cz=[-10,14,-20][u.c];const a=t*.35+u.ph;b.position.set(cx+Math.cos(a)*u.rad+u.o,11+u.c*1.5+Math.sin(a*2)*.6,cz+Math.sin(a)*u.rad*.7);u.tex.offset.x=Math.floor(t*6+u.ph)%2?.5:0;b.scale.x=(Math.sin(a)>0?-1:1)*1.4;});}
 
