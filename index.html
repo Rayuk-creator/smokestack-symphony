@@ -1892,7 +1892,7 @@ function buildPlaza(scene,team,race){const G=new THREE.Group();scene.add(G);cons
   bakeGroup(G);return G;}
 
 /* ================= ATMOSFERA: nuvole, dirigibili, uccelli, terre lontane ================= */
-const ATMO={clouds:null,ships:[],birds:[],far:null};
+const ATMO={clouds:null,ships:[],birds:[],far:null,anim:[]};
 function buildAtmosphere(scene){
   /* terre lontane oltre i bordi della mappa */
   const farC=canv('farland',(g,w,h)=>{const r=rng(55);for(let y=0;y<h;y++)for(let x=0;x<w;x++){g.fillStyle=['#3f4a2a','#46512e','#3a4426','#4c5632','#5a4c38'][Math.floor(r()*5)];g.fillRect(x,y,1,1);}
@@ -1902,8 +1902,13 @@ function buildAtmosphere(scene){
   const R=rng(808);const fg=new THREE.Group();scene.add(fg);
   const tc=[treeCanvas(1,'leafy'),treeCanvas(2,'leafy'),treeCanvas(3,'leafy'),treeCanvas(4,'leafy')];
   for(let k=0;k<160;k++){const a=R()*Math.PI*2,d=58+R()*55;const x=Math.cos(a)*d*1.15,z=Math.sin(a)*d*.9;if(Math.abs(x)<50&&Math.abs(z)<40)continue;const s=2+R()*2.5;decoSprite(fg,tc[k%4],x,z,3.2*s,4.8*s,-1.2);}
-  for(let k=0;k<14;k++){const a=R()*Math.PI*2,d=70+R()*40;const m=add(fg,new THREE.ConeGeometry(6+R()*8,8+R()*10,6),new THREE.MeshLambertMaterial({color:0x4a4a52,flatShading:true}),Math.cos(a)*d,-1,Math.sin(a)*d*.85);m.castShadow=false;}
   bakeGroup(fg,true);
+  /* cornice fuori dal campo: vulcani PixelLab animati sui lati e sul fondo (il lato verso la telecamera resta libero).
+     Hanno una lista di animazione propria (ATMO.anim) perche' newMap svuota MAP2.anim. */
+  if(typeof pxAnimTex==='function'&&pxAnimTex('vulcano')){
+    const V=[[-46,-17,12],[-45,0,9],[-46,16,11],[46,-10,11],[45,6,9],[46,22,10],[-28,-38,12],[-6,-40,15],[16,-38,11],[36,-37,14],[-46,-36,10],[48,-34,10]];
+    V.forEach(([x,z,w],i)=>{const T=pxAnimTex('vulcano');const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.tex,alphaTest:.5}));sp.center.set(.5,.03);sp.position.set(x,-1.2,z);sp.scale.set(w,w*T.ar,1);scene.add(sp);
+      ATMO.anim.push({tex:T.tex,n:T.n,fps:4+(i%3),ph:i*2.3});const g=glowSprite(0xff6a1f,.35,w*.7);g.position.set(x,-1.2+w*T.ar*.8,z);scene.add(g);});}
   /* ombre delle nuvole che scorrono */
   const cc=mkCanvas(256,256),g=cc.getContext('2d');const r=rng(77);g.clearRect(0,0,256,256);
   for(let k=0;k<26;k++){const x=r()*256,y=r()*256,rad=18+r()*38;for(const ox of [-256,0,256])for(const oy of [-256,0,256]){const gr=g.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x+ox-rad,y+oy-rad,rad*2,rad*2);}}
@@ -1930,7 +1935,7 @@ function buildAtmosphere(scene){
   /* stormi di uccelli */
   const bc=canv('bird',(gg)=>{const p=new Painter(32,8);for(let f=0;f<2;f++){const ox=f*16;const wing=f?-2:2;p.line(ox+2,4+wing,ox+7,4,'#2a2622');p.line(ox+7,4,ox+9,4,'#2a2622');p.line(ox+9,4,ox+14,4+wing,'#2a2622');p.px(ox+8,5,'#2a2622');}p.render(gg,0,0);},32,8);
   for(let i=0;i<12;i++){const t=nearest(new THREE.CanvasTexture(bc));t.repeat.set(.5,1);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,alphaTest:.5}));sp.scale.set(1.4,.7,1);sp.userData={tex:t,c:i%3,o:(i%4)*.9,ph:Math.random()*6,rad:6+Math.random()*3};scene.add(sp);ATMO.birds.push(sp);}}
-function updateAtmosphere(t,dt){if(ATMO.clouds){const m=ATMO.clouds.material.map;m.offset.x=t*.006;m.offset.y=t*.0025;}
+function updateAtmosphere(t,dt){ATMO.anim.forEach(a=>{a.tex.offset.x=((Math.floor(t*a.fps+a.ph)%a.n)+a.n)%a.n/a.n;});if(ATMO.clouds){const m=ATMO.clouds.material.map;m.offset.x=t*.006;m.offset.y=t*.0025;}
   ATMO.ships.forEach(s=>{const u=s.userData;const a=t*u.sp+u.ph;const x=Math.cos(a)*u.r*1.35,z=Math.sin(a)*u.r*.75;
     /* la telecamera e' inclinata di 46 gradi: un oggetto a quota h appare spostato di h/tan(46) verso l'alto dello schermo (nord), quindi lo si sposta a sud della stessa misura */
     if(u.spr){s.position.set(x,u.h,z+u.h*.966);const T=u.spr,f=((Math.floor(t*5+u.ph*3)%T.n)+T.n)%T.n,right=-Math.sin(a)*u.sp>0;T.tex.repeat.x=(right?-1:1)/T.n;T.tex.offset.x=(f+(right?1:0))/T.n;return;}
