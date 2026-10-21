@@ -2600,6 +2600,9 @@ function hgUpdate(){HG.spot=[[],[]];HG.low=[0,1].map(t=>teams[t]&&teams[t].race=
 function hgSees(team,e){if(!e.hi||(!e.isB&&e.T.big))return true;const S=HG.spot[team];if(!S)return true;const R=HG.R+(e.isB?e.r:0),R2=R*R;
   for(const p of S)if((p.x-e.pos.x)**2+(p.z-e.pos.z)**2<R2)return true;
   const L=HG.low[team];if(L){const r=HG.RT+(e.isB?e.r:0),r2=r*r;for(const p of L)if((p.x-e.pos.x)**2+(p.z-e.pos.z)**2<r2)return true;}return false;}
+/* solo per lo schermo (versione 59.1): gli edifici si vedono sempre, anche in altura, tranne quelli invisibili (Torre occulta) finche' non si scoprono.
+   Per colpirli invece vale visibleTo (serve vista in altura). */
+function shownTo(team,e){if(team<0||e.team===team)return true;if(e.isB&&!e.T.stealth)return true;return visibleTo(team,e);}
 function visibleTo(team,e){if(team<0||e.team===team)return true;if(!hgSees(team,e))return false;const st=e.isB?e.T.stealth:e.T.stealth;if(!st)return true;if(now<e.revealUntil)return true;
   if(!e.isB)for(const b of blds){if(b.team===team&&!b.dead&&b.built&&b.T.def&&Math.hypot(b.pos.x-e.pos.x,b.pos.z-e.pos.z)<b.T.def.rng+b.r)return true;}
   const sense=teams[team]&&teams[team].race==='thalren'?1.6:1;for(const v of units){if(v.team===team&&!v.dead&&Math.hypot(v.pos.x-e.pos.x,v.pos.z-e.pos.z)<(e.isB?3.5+e.r:2.8)*sense)return true;}return false;}
@@ -2724,7 +2727,7 @@ function updateUnit(u,dt){if(u.dead){u.deathT+=dt;return;}
   if(u.target&&(u.target.dead||!visibleTo(u.team,u.target)))u.target=null;
   const o=u.order;
   if(o&&(o.kind==='gather'||o.kind==='return'||o.kind==='build')){workerLogic(u,dt);return;}
-  if(o&&o.kind==='attack'){if(o.ent.dead||!visibleTo(u.team,o.ent))u.order=null;else u.target=o.ent;}
+  if(o&&o.kind==='attack'){if(o.ent.dead)u.order=null;else if(!visibleTo(u.team,o.ent)){if(o.ent.isB&&shownTo(u.team,o.ent)){u.target=null;const a=approach(o.ent,u,1);goTo(u,a.x,a.z,dt);return;}u.order=null;}else u.target=o.ent;}
   if(o&&o.kind==='move'){u.target=null;if(goTo(u,o.x,o.z,dt)<.4)u.order=null;return;}
   u.acqT-=dt;if(!u.target&&!u.T.worker&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=acquire(u,o?8:7);}
   if(u.target){engage(u,u.target,dt);return;}
@@ -2861,7 +2864,7 @@ function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Mat
   if(u.T.worker){if(u.carry&&vis){if(!u.cs){u.cs=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,color:{vent:0xff8a3a,sap:0xffc04a,gold:0xffd36a,scrap:0xb8b0a4}[RACES[u.T.race].node],transparent:true,depthWrite:false}));u.cs.scale.set(.5,.5,1);scene.add(u.cs);}
     u.cs.visible=true;u.cs.position.set(u.pos.x-u.face*.5,Y+1.3,u.pos.z);}else if(u.cs)u.cs.visible=false;}}
 function syncBld(b){const sel=selection.has(b),hov=b===hoverEnt;b.G.scale.y=b.built?1:.12+.88*b.prog;
-  const vt=viewTeam();const vis=vt<0||b.team===vt||visibleTo(vt,b);b.G.visible=vis;
+  const vt=viewTeam();const vis=shownTo(vt,b);b.G.visible=vis;
   b.ring.visible=vis&&(sel||hov);b.ring.material.color.set(hov&&b.team!==0?0xff8a6a:TEAMCOL[b.team]);
   const r=b.built?b.hp/b.maxhp:b.prog;const show=vis&&(sel||hov||b.hp<b.maxhp-1||!b.built);b.bg.visible=b.fg.visible=show;if(show)placeBar(b,b.top*(b.built?1:.12+.88*b.prog)+.4,r,b.built?hpCol(r):0x6fb3e6);}
 function animateBases(t,dt){animateExtBld(t);for(const b of blds){if(b.dead||!b.built)continue;b.m.spin.forEach(([o,sp,ax])=>{if(ax==='yo')o.rotation.y=Math.sin(t*sp)*.6;else if(ax==='y')o.rotation.y+=sp*dt;else if(ax==='rock')o.rotation.z=Math.sin(t*sp)*.3;else if(ax==='hammer')o.rotation.z=-Math.abs(Math.sin(t*sp))*1.1;else o.rotation.z+=sp*dt;});
@@ -2950,7 +2953,7 @@ function entRect(e){if(e.isB){const c=proj(e.pos.x,0,e.pos.z),l=proj(e.pos.x-e.r
 function pickEnt(cx,cy,f){let best=null,bd=Infinity;const pad=coarse?14:5;const vt=viewTeam();
   const test=e=>{const r=entRect(e);if(cx>=r.x0-pad&&cx<=r.x1+pad&&cy>=r.y0-pad&&cy<=r.y1+pad){const d=Math.hypot(cx-r.cx,cy-r.cy)+(e.isB?30:e.isN?40:0);if(d<bd){bd=d;best=e;}}};
   for(const u of units){if(u.dead||!f(u))continue;if(vt>=0&&!visibleTo(vt,u))continue;test(u);}
-  for(const b of blds){if(b.dead||!f(b))continue;if(vt>=0&&!visibleTo(vt,b))continue;test(b);}
+  for(const b of blds){if(b.dead||!f(b))continue;if(vt>=0&&!shownTo(vt,b))continue;test(b);}
   for(const n of nodes){if(n.amt<1||!f(n))continue;test(n);}return best;}
 
 /* ---------- ordini ---------- */
@@ -3046,7 +3049,7 @@ const NCOL={vent:'#ff7a29',sap:'#e6c25a',gold:'#f0c84a',scrap:'#b8b0a4'};
 function drawMini(){if(!miniBase)return;mg.drawImage(miniBase,0,0);
   for(const n of nodes){if(n.amt<1)continue;mg.fillStyle=NCOL[n.kind];mg.fillRect(mx(n.pos.x)-1,mz(n.pos.z)-1,2,2);}
   const vt=viewTeam();
-  for(const b of blds){if(b.dead||(vt>=0&&!visibleTo(vt,b)))continue;const s=Math.max(3,b.r*2.4);mg.fillStyle=TEAMCOL[b.team];mg.fillRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);mg.strokeStyle='#140f0c';mg.lineWidth=1;mg.strokeRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);}
+  for(const b of blds){if(b.dead||(vt>=0&&!shownTo(vt,b)))continue;const s=Math.max(3,b.r*2.4);mg.fillStyle=TEAMCOL[b.team];mg.fillRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);mg.strokeStyle='#140f0c';mg.lineWidth=1;mg.strokeRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);}
   for(const u of units){if(u.dead||(vt>=0&&!visibleTo(vt,u)))continue;mg.fillStyle=selection.has(u)?'#ffffff':TEAMCOL[u.team];mg.fillRect(mx(u.pos.x)-1,mz(u.pos.z)-1,u.T.big?3:2,u.T.big?3:2);}
   const cs=[[0,0],[innerWidth,0],[innerWidth,innerHeight],[0,innerHeight]].map(([x,y])=>groundAt(x,Math.max(y,innerHeight*.08)));
   if(cs.every(Boolean)){mg.strokeStyle='rgba(239,227,207,.85)';mg.lineWidth=1;mg.beginPath();cs.forEach((p,i)=>{const X=mx(p.x),Y=mz(p.z);if(i)mg.lineTo(X,Y);else mg.moveTo(X,Y);});mg.closePath();mg.stroke();}}
