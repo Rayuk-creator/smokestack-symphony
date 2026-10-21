@@ -14,6 +14,8 @@ Strategia in tempo reale in stile dieselpunk, con tocchi steampunk. Si gioca nel
 
 Questa è una **versione di prova per gli amici tester**: ogni commento è benvenuto.
 
+Il gioco è in **italiano e inglese**: la lingua si sceglie nella schermata iniziale (all'inizio segue quella del browser).
+
 ### Come si gioca
 Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le risorse della tua razza, costruisci, porta la base al livello 2 e **distruggi tutti gli edifici nemici** per vincere.
 
@@ -48,13 +50,15 @@ Personaggi, edifici e terreni disegnati con [PixelLab](https://www.pixellab.ai/)
 
 A dieselpunk real-time strategy game with a touch of steampunk. It runs in the browser: Chrome on desktop, Android phones and tablets. Nothing to install.
 
-This is a **test build for friends**: all feedback is welcome. (The in-game text is in Italian for now.)
+This is a **test build for friends**: all feedback is welcome.
+
+The game is in **English and Italian**: pick the language on the start screen (it first follows your browser's language).
 
 ### How to play
 You start with your main base and five workers already gathering. Collect your race's resources, build, upgrade your base to level 2 and **destroy every enemy building** to win.
 
-- **Mode**: *Gioca* (Play: you against the computer) or *Osserva* (Watch: computer against computer).
-- **Difficulty**: Facile (Easy), Normale (Normal), Difficile (Hard).
+- **Mode**: *Play* (you against the computer) or *Watch* (computer against computer).
+- **Difficulty**: Easy, Normal, Hard.
 - **Opponent**: pick a race or leave it random.
 - **Map**: different every game. The river can be toxic sludge, lava or water, with bridges and walkways in new places each time.
 - Bases have two levels. Population cap is 55.
@@ -68,12 +72,12 @@ You start with your main base and five workers already gathering. Collect your r
 | Race | Who they are | Resources | Elite |
 |---|---|---|---|
 | **Durmagh** | Volcanic dwarves | Magma | Magminator |
-| **Thalren** | Forest elves | Sap | Forest Warden (Custode della foresta) |
+| **Thalren** | Forest elves | Sap | Forest Warden |
 | **Vaelrith** | Dark elves, a praying steampunk sect | Gold and prayers | The Sealed |
 | **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein |
 
 ### If the game stutters
-The pause menu has **Qualità grafica** (graphics quality: Alta/High, Media/Medium, Bassa/Low). The game picks one automatically and lowers it when needed. **Info prestazioni** (performance info) → *Copia i dati* (copy data) lets you send us your device's numbers, which helps a lot.
+The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
 
 ### Credits
 Characters, buildings and terrain drawn with [PixelLab](https://www.pixellab.ai/). 3D graphics with [Three.js](https://threejs.org/).
