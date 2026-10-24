@@ -41,6 +41,7 @@ body{margin:0;background:var(--oil);color:var(--bone);font-family:var(--f-ui);fo
 .ri{display:flex;align-items:center;gap:5px;font-size:15px;white-space:nowrap}.ri .lab{color:var(--muted);font-size:13px;letter-spacing:.06em;text-transform:uppercase}.ri b{font-weight:700;font-size:17px}
 .ri.warn b{color:var(--foe)}.ri.tm b{color:var(--brass)}
 .d{display:inline-block;width:9px;height:9px;transform:rotate(45deg);flex:none}
+#satl{position:fixed;left:0;top:0;pointer-events:none;z-index:3}#satl .sc{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:3px;padding:1px 6px 1px 3px;border-radius:9px;background:rgba(20,16,12,.78);border:1px solid rgba(255,255,255,.18);font:700 12px/16px system-ui,sans-serif;color:#e8f0d8;white-space:nowrap}#satl .sc .ico{width:16px;height:16px}#satl .sc.ok{color:#b9f28a}#satl .sc.over{color:#ffb35a;border-color:rgba(255,160,70,.6)}
 .ico{display:inline-block;width:22px;height:22px;background-size:contain;background-repeat:no-repeat;background-position:center;flex:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}.cost .ico{width:14px;height:14px;filter:none}
 .dot{display:inline-block;width:9px;height:9px;transform:rotate(45deg);margin-right:6px}
 .team{font-family:var(--f-display);font-size:17px;letter-spacing:.04em;display:flex;align-items:center}
@@ -152,6 +153,7 @@ button.primary:hover{background:#e8b65a}
       <button type="button" id="bMenu">Menu</button>
     </div>
   </header>
+  <div id="satl"></div>
   <div id="toast" class="plate" hidden></div>
   <footer id="bottom" hidden>
     <canvas id="mini" class="plate" width="200" height="150" aria-label="Minimappa"></canvas>
@@ -233,6 +235,7 @@ let LANG=(function(){let l=null;
   if(!LANGS.includes(l))try{l=/^it\b/i.test(navigator.language||'')?'it':'en';}catch(e){l=null;}
   return LANGS.includes(l)?l:'it';})();
 const EN={
+'Lavoratori su questi giacimenti / ideale (2 per giacimento)':'Workers on these deposits / ideal (2 per deposit)',
   /* pagina */
   'Campo di battaglia':'Battlefield','Strategia in tempo reale dieselpunk':'Dieselpunk real-time strategy','Velocità di gioco':'Game speed','Pausa':'Pause',
   'Minimappa':'Minimap','Comandi':'Commands','Prototipo · partita completa':'Prototype · full match',
@@ -2752,7 +2755,7 @@ function spawnBuilding(key,team,x,z,built){const T=BT[key];const m=extBuilding(k
 function refreshSmoke(){setSmoke(scene,envSmoke.concat(...blds.filter(b=>b.built&&!b.dead).map(b=>b.smoke)));}
 let nodeDecor=null,plazas=[];
 function spawnNode(kind,x,z,amt,opt){const G=(typeof extNode==='function'&&extNode(kind))||NODEM[kind]();if(!(opt&&opt.wreck)){if(!nodeDecor){nodeDecor=new THREE.Group();scene.add(nodeDecor);}const d=new THREE.Group();d.position.set(x,gy(x,z),z);nodeDecor.add(d);NODEDRESS[kind](d);}bakeGroup(G);G.position.set(x,gy(x,z),z);scene.add(G);
-  const n={isN:true,id:uid++,kind,pos:new THREE.Vector3(x,0,z),amt,max:amt,r:opt&&opt.wreck?.6:.9,G,wreck:opt&&opt.wreck,regen:kind==='sap'?.5:0};nodes.push(n);nodeChanged(n);return n;}
+  const n={isN:true,id:uid++,kind,pos:new THREE.Vector3(x,0,z),amt,max:amt,r:opt&&opt.wreck?.6:.9,G,wreck:opt&&opt.wreck,regen:kind==='sap'?.25:0};nodes.push(n);nodeChanged(n);return n;}
 function nodeChanged(n){if(n.amt<=0&&!n.regen){scene.remove(n.G);nodes.splice(nodes.indexOf(n),1);n.gone=true;return;}
   n.G.visible=n.amt>=1;const s=(.55+.45*Math.min(1,n.amt/n.max))*(n.wreck?.6:1);n.G.scale.set(s,s,s);}
 
@@ -2836,16 +2839,27 @@ function killBuilding(b,src){if(b.dead)return;b.dead=true;selection.delete(b);se
 /* ---------- lavoratori ---------- */
 function nodeKind(team){return RACES[teams[team].race].node;}
 function findNode(team,near,avoid){const k=nodeKind(team);let best=null,bd=Infinity;for(const n of nodes){if(n.kind!==k||n.amt<1||n===avoid)continue;let d=Math.hypot(n.pos.x-near.x,n.pos.z-near.z);
-  const crowd=units.filter(u=>u.order&&u.order.node===n&&!u.dead).length;d+=crowd*1.6;if(d<bd){bd=d;best=n;}}return best;}
+  const crowd=units.filter(u=>u.order&&u.order.node===n&&!u.dead).length;d+=n.wreck||crowd<2?crowd*1.6:3.2+(crowd-1)*7;if(d<bd){bd=d;best=n;}}return best;}
 function nearestDrop(team,p){let best=null,bd=Infinity;for(const b of blds){if(b.dead||!b.built||b.team!==team||!b.T.drop)continue;const d=Math.hypot(b.pos.x-p.x,b.pos.z-p.z)-b.r;if(d<bd){bd=d;best=b;}}return best;}
 function autoGather(u,near){const n=findNode(u.team,near||u.pos);if(n){u.order={kind:u.carry?'return':'gather',node:n};}else if(u.carry)u.order={kind:'return',node:null};else u.order=null;}
+/* SATURAZIONE (versione 60, come StarCraft 2): su un giacimento 1 o 2 lavoratori rendono a pieno ritmo; con 3 il giacimento rende in tutto
+   SAT_3 volte un lavoratore (invece di 3), con 4 o piu' non rende di piu'. Si ottiene allungando il tempo di scavo di ciascuno:
+   ciclo pieno = gt + SAT_TRIP (andata e ritorno tipico dalla base, misurato con tools/eco.js). I relitti degli Scrappers non hanno questa regola. */
+const SAT_TRIP=3.8,SAT_3=2.3;
+function satK(n){if(now-(n._kT??-9)>.5){n._k=units.filter(v=>!v.dead&&v.order&&v.order.node===n).length;n._kT=now;}return n._k;}
+function satGt(n,W){if(n.wreck)return W.gt;const k=satK(n);if(k<=2)return W.gt;return Math.max(W.gt,k*(W.gt+SAT_TRIP)/SAT_3-SAT_TRIP);}
+/* lavoratori e numero ideale (2 per giacimento) per ogni deposito costruito della squadra: serve all'IA e al contatore sopra le basi */
+function satInfo(t){const k=nodeKind(t);const D=blds.filter(b=>!b.dead&&b.built&&b.team===t&&b.T.drop);const m=new Map(D.map(b=>[b,{w:0,ideal:0}]));
+  const near=n=>{if(n._satT===now&&n._satTeam===t)return n._satB;let best=null,bd=10;for(const b of D){const d=Math.hypot(b.pos.x-n.pos.x,b.pos.z-n.pos.z)-b.r;if(d<bd){bd=d;best=b;}}n._satT=now;n._satTeam=t;n._satB=best;return best;};
+  for(const n of nodes){if(n.kind!==k||n.wreck||n.amt<1)continue;const b=near(n);if(b)m.get(b).ideal+=2;}
+  for(const u of units){if(u.dead||u.team!==t||!u.T.worker||!u.order||!u.order.node||u.order.node.wreck||u.order.node.gone)continue;const b=near(u.order.node);if(b)m.get(b).w++;}return m;}
 function workerLogic(u,dt){const o=u.order;const W=u.T.worker;
   if(o.kind==='build'){const b=o.b;if(b.dead||b.built){autoGather(u);return;}const d=edgeDist(u,b);
     if(d>.9){const a=approach(b,u,.5);goTo(u,a.x,a.z,dt);}else{u.working=true;u.face=Math.sign(b.pos.x-u.pos.x)||1;b.prog+=dt/b.T.time;b.hp=Math.min(b.maxhp,b.hp+b.maxhp*.9*dt/b.T.time);if(b.prog>=1)finishBuilding(b);}return;}
   if(o.kind==='gather'){let n=o.node;if(u.carry&&u.carry.amt>=W.carry){o.kind='return';return;}
     if(!n||n.gone||n.amt<1){n=findNode(u.team,n?n.pos:u.pos,n);if(!n){if(u.carry)o.kind='return';else u.order=null;return;}o.node=n;}
     const d=edgeDist(u,n);if(d>.6){goTo(u,n.pos.x,n.pos.z,dt);u.gatherT=0;}
-    else{u.working=true;u.face=Math.sign(n.pos.x-u.pos.x)||1;u.gatherT+=dt;if(u.gatherT>=W.gt){const a=Math.min(W.carry*(teams[u.team].eco||1),n.amt);n.amt-=a;nodeChanged(n);u.carry={amt:a};u.gatherT=0;o.kind='return';if(Math.random()<.5)spawnFx('spark',n.pos.x,.8,n.pos.z,{vent:0xff8a3a,sap:0xffd36a,gold:0xffe08a,scrap:0xc0c0c0}[n.kind]);}}return;}
+    else{u.working=true;u.face=Math.sign(n.pos.x-u.pos.x)||1;u.gatherT+=dt;if(u.gatherT>=satGt(n,W)){const a=Math.min(W.carry*(teams[u.team].eco||1),n.amt);n.amt-=a;nodeChanged(n);u.carry={amt:a};u.gatherT=0;o.kind='return';if(Math.random()<.5)spawnFx('spark',n.pos.x,.8,n.pos.z,{vent:0xff8a3a,sap:0xffd36a,gold:0xffe08a,scrap:0xc0c0c0}[n.kind]);}}return;}
   if(o.kind==='return'){const dp=nearestDrop(u.team,u.pos);if(!dp){u.order=null;return;}const d=edgeDist(u,dp);
     if(d>.8){const a=approach(dp,u,.4);goTo(u,a.x,a.z,dt);}else{const tm=teams[u.team];const a=u.carry?u.carry.amt:0;tm.res.p+=a;tm.stats.gath+=a;u.carry=null;o.kind='gather';if(!o.node||o.node.gone||o.node.amt<1)o.node=findNode(u.team,u.pos);if(!o.node)u.order=null;}}}
 
@@ -2920,23 +2934,24 @@ function nextStep(tm,myB){const hq=myB.find(b=>b.T.role==='hq');const lvlQ=hq&&h
     if(st.lvl){if(tm.level>=st.lvl)continue;if(lvlQ)return WAIT;if(!hq||!hq.built)return WAIT;if(st.lvl!==tm.level+1)continue;return{type:'l',hq,cost:LEVELS[st.lvl].cost};}
     if(st.r){if(tm.done[st.r]||researchQueued(tm.id,st.r))continue;const rbAny=myB.find(b=>b.T.research);if(!rbAny)continue;if(!rbAny.built)return WAIT;return{type:'r',r:st.r,rb:rbAny,cost:researchCost(tm.race)};}}
   return null;}
-function aiSpot(t,role,n,hq){const s=SLOTS[role]&&SLOTS[role][n];const key=roleKey(teams[t].race,role);
+function aiSpot(t,role,n,hq,tgtN){const s=SLOTS[role]&&SLOTS[role][n];const key=roleKey(teams[t].race,role);
   const tries=[];if(s)tries.push(L2W(t,s[0],s[1]));for(let k=0;k<30;k++){const a=Math.random()*Math.PI*2,r=7+Math.random()*9;tries.push({x:hq.pos.x+Math.cos(a)*r,z:hq.pos.z+Math.sin(a)*r*.8});}
-  if(role==='res'){const nd=findNode(t,hq.pos);if(nd){const far=lowBaseNodes(t,hq);const tgt=far||nd;for(let k=0;k<20;k++){const a=Math.random()*Math.PI*2;tries.unshift({x:tgt.pos.x+Math.cos(a)*4.2,z:tgt.pos.z+Math.sin(a)*4.2});}}}
+  if(role==='res'){const nd=findNode(t,hq.pos);if(nd){const far=tgtN||lowBaseNodes(t,hq);const tgt=far||nd;for(let k=0;k<20;k++){const a=Math.random()*Math.PI*2;tries.unshift({x:tgt.pos.x+Math.cos(a)*4.2,z:tgt.pos.z+Math.sin(a)*4.2});}}}
   for(const p of tries)if(placeOK(key,p.x,p.z))return p;return null;}
-function lowBaseNodes(t,hq){const k=nodeKind(t);const near=nodes.filter(n=>n.kind===k&&!n.wreck&&Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z)<18);const sum=near.reduce((s,n)=>s+n.amt,0);
-  if(sum>2500)return null;let best=null,bd=Infinity;for(const n of nodes){if(n.kind!==k||n.amt<200)continue;const d=Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z);if(d<18)continue;if(nearestDrop(t,n.pos)&&Math.hypot(nearestDrop(t,n.pos).pos.x-n.pos.x,nearestDrop(t,n.pos).pos.z-n.pos.z)<8)continue;if(d<bd){bd=d;best=n;}}return best;}
+function lowBaseNodes(t,hq,force){const k=nodeKind(t);const near=nodes.filter(n=>n.kind===k&&!n.wreck&&Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z)<18);const sum=near.reduce((s,n)=>s+n.amt,0);
+  if(sum>2500&&!force)return null;let best=null,bd=Infinity;for(const n of nodes){if(n.kind!==k||n.amt<200)continue;const d=Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z);if(d<18)continue;if(nearestDrop(t,n.pos)&&Math.hypot(nearestDrop(t,n.pos).pos.x-n.pos.x,nearestDrop(t,n.pos).pos.z-n.pos.z)<8)continue;if(d<bd){bd=d;best=n;}}return best;}
 function weightedPick(opts,W){let tot=0;opts.forEach(k=>tot+=W[k]||1);let r=Math.random()*tot;for(const k of opts){r-=W[k]||1;if(r<=0)return k;}return opts[0];}
 function aiUpdate(tm,dt){tm.aiT-=dt;if(tm.aiT>0)return;tm.aiT=.7*(tm.think||1);const t=tm.id,race=tm.race,S=tm.aiS||(tm.aiS={wave:0,waveSize:tm.wave0||10,expandT:0});
   const my=units.filter(u=>u.team===t&&!u.dead);const W=my.filter(u=>u.T.worker),A=my.filter(u=>!u.T.worker);
   const myB=blds.filter(b=>b.team===t&&!b.dead);const hq=myB.find(b=>b.T.role==='hq');
   W.forEach(w=>{if(!w.order)autoGather(w);});
   const armyPop=A.reduce((s,u)=>s+u.T.pop,0);const cap=CAP[tm.level];
-  const wantW=RACES[race].s?14:13;
+  const sat=satInfo(t);let ideal=0;sat.forEach(v=>ideal+=v.ideal);const resKey0=roleKey(race,'res');const expanding=myB.some(b=>!b.built&&b.key===resKey0);
+  const wantW=Math.min(30,Math.max(8,ideal+1)+(expanding?4:0));
   if(hq&&hq.built&&!hq.queue.some(i=>i.kind==='unit')&&W.length<wantW&&popUsed(t)<cap)tryTrain(hq,RACES[race].worker);
   let reserve=[0,0];
-  if(hq){const far=S.expandT<now?lowBaseNodes(t,hq):null;const resKey=roleKey(race,'res');
-    if(far&&resKey&&BT[resKey].lvl<=tm.level&&afford(tm,BT[resKey].cost)&&myB.filter(b=>b.key===resKey).length<4){const p=aiSpot(t,'res',99,hq);const w=W.find(w=>w.order&&w.order.kind!=='build');if(p&&w){placeBuilding(t,resKey,p.x,p.z,[w]);S.expandT=now+60;}}}
+  if(hq){const far=S.expandT<now?lowBaseNodes(t,hq,W.length>=ideal&&ideal>0):null;const resKey=roleKey(race,'res');
+    if(far&&resKey&&BT[resKey].lvl<=tm.level&&afford(tm,BT[resKey].cost)&&myB.filter(b=>b.key===resKey).length<4){const p=aiSpot(t,'res',99,hq,far);const w=W.find(w=>w.order&&w.order.kind!=='build');if(p&&w){placeBuilding(t,resKey,p.x,p.z,[w]);S.expandT=now+60;}}}
   const st=hq?nextStep(tm,myB):null;
   if(st&&st.type!=='wait'){if(afford(tm,st.cost)){if(st.type==='b'){const p=aiSpot(t,st.role,st.n,hq);const w=W.slice().sort((a,b)=>(p?Math.hypot(a.pos.x-p.x,a.pos.z-p.z)-Math.hypot(b.pos.x-p.x,b.pos.z-p.z):0)).find(w=>!w.order||w.order.kind!=='build');if(p&&w)placeBuilding(t,st.key,p.x,p.z,[w]);}
       else if(st.type==='l')tryLevel(st.hq);else tryResearch(st.rb,st.r);}
@@ -2948,10 +2963,12 @@ function aiUpdate(tm,dt){tm.aiT-=dt;if(tm.aiT>0)return;tm.aiT=.7*(tm.think||1);c
   const elB=elKey&&tm.level>=MAXLVL&&elites<elMax&&now>=(tm.elT||0)?myB.find(b=>b.built&&b.T.trains.includes(elKey)):null;
   const saveEl=elB&&armyPop>=(now-(S.threatT||-99)>20?8:14)&&popUsed(t)+TYPES[elKey].pop<=cap;
   if(saveEl)reserve=[Math.max(reserve[0],TYPES[elKey].cost[0]),Math.max(reserve[1],TYPES[elKey].cost[1])];
+  /* Spie: ogni Covo dei ladri le addestra; l'IA ne tiene al massimo 2 (in campo + in coda), altrimenti con tanti Covi l'esercito si riempie di Spie */
+  let spies=A.filter(u=>u.key==='spia').length+myB.reduce((s,b)=>s+b.queue.filter(i=>i.kind==='unit'&&i.key==='spia').length,0);
   myB.forEach(b=>{if(!b.built||b.queue.length||!b.T.trains.length||b.T.role==='hq')return;
     if(saveEl&&b===elB){if(afford(tm,TYPES[elKey].cost))tryTrain(b,elKey);return;}
-    const opts=b.T.trains.filter(k=>COMP[race][k]&&unitAvailable(tm,k,myB)&&(!TYPES[k].elite||elites<(tm.level>=MAXLVL?elMax:0)));if(!opts.length)return;
-    const k=weightedPick(opts,COMP[race]);const T=TYPES[k];if(tm.res.p-T.cost[0]>=reserve[0]&&tm.res.s-T.cost[1]>=reserve[1])tryTrain(b,k);});
+    const opts=b.T.trains.filter(k=>COMP[race][k]&&unitAvailable(tm,k,myB)&&(k!=='spia'||spies<2)&&(!TYPES[k].elite||elites<(tm.level>=MAXLVL?elMax:0)));if(!opts.length)return;
+    const k=weightedPick(opts,COMP[race]);const T=TYPES[k];if(tm.res.p-T.cost[0]>=reserve[0]&&tm.res.s-T.cost[1]>=reserve[1]){tryTrain(b,k);if(k==='spia'&&b.queue.length)spies++;}});
   let threat=null,td=Infinity;for(const v of units){if(v.dead||v.team===t||!visibleTo(t,v))continue;for(const b of myB){const d=d2(v,b)-b.r;if(d<14&&d<td){td=d;threat=v;}}}
   if(threat){S.threatT=now;A.forEach(u=>{if(!u.target&&(!u.order||u.order.def||u.order.kind!=='amove'||Math.hypot(u.pos.x-threat.pos.x,u.pos.z-threat.pos.z)<26))u.order={kind:'amove',x:threat.pos.x,z:threat.pos.z,def:1};});return;}
   if(!hq&&!myB.length)return;const home=(hq||myB[0]).pos;
@@ -3226,6 +3243,12 @@ mini.addEventListener('pointerdown',e=>{if(e.button===2&&ownUnitsSel().length){c
 mini.addEventListener('pointermove',e=>{if(miniDrag)miniTo(e);});mini.addEventListener('pointerup',()=>{miniDrag=false;});mini.addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ---------- pannelli ---------- */
+/* contatore della saturazione sopra i propri depositi (solo in Gioca): lavoratori / ideale (2 per giacimento); verde = pieno, arancio = troppi */
+let satT=0,satEls=[];function drawSat(){const box=$('#satl');if(!box||typeof satInfo!=='function')return;const show=gameOn&&!ended&&picks.mode==='play';let i=0;
+  if(show){const R=RACES[teams[0].race];satInfo(0).forEach((v,b)=>{if(!v.ideal&&!v.w)return;const p=proj(b.pos.x,gy(b.pos.x,b.pos.z)+(b.top||4)+.3,b.pos.z);if(p.x<-40||p.y<-20||p.x>innerWidth+40||p.y>innerHeight+20)return;
+    let e=satEls[i];if(!e){e=document.createElement('div');box.appendChild(e);satEls.push(e);}const cls='sc'+(v.w>v.ideal?' over':v.w===v.ideal&&v.ideal?' ok':'');const h=ico(R.ipop,'#ccc')+v.w+'/'+v.ideal;
+    if(e._h!==h){e.innerHTML=h;e._h=h;}if(e.className!==cls)e.className=cls;e.style.left=Math.round(p.x)+'px';e.style.top=Math.round(p.y)+'px';e.style.display='';e.title=LT('Lavoratori su questi giacimenti / ideale (2 per giacimento)');i++;});}
+  for(;i<satEls.length;i++)satEls[i].style.display='none';}
 let toastT=0;function placeToast(){const t=$('#toast'),tp=$('#top');if(!tp||!tp.children||!tp.children.length||typeof getComputedStyle!=='function')return;let y=0;for(const c of Array.from(tp.children)){if(c.hidden||getComputedStyle(c).display==='none')continue;y=Math.max(y,c.getBoundingClientRect().bottom);}if(y>0)t.style.top=Math.round(y+8)+'px';}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;placeToast();toastT=3.2;}const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* icone PixelLab delle risorse (EXTICON in pxdata.js): una classe CSS per icona, cosi' l'immagine sta una volta sola nella pagina; se l'icona manca resta il pallino colorato */
@@ -3327,6 +3350,7 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   uiT-=rdt;if(gameOn&&(selDirty||uiT<=0)){renderRes();renderSel();renderCmd();selDirty=false;uiT=.3;}
   miniT-=rdt;if(gameOn&&miniT<=0){drawMini();miniT=.2;}
   if(toastT>0){placeToast();toastT-=rdt;if(toastT<=0)$('#toast').hidden=true;}
+  satT-=rdt;if(satT<=0){satT=.2;drawSat();}
   updateLightPool(rdt);shadowTick();
   const tL1=performance.now();render();const tL2=performance.now();PERF.logic+=(tL1-tL0-PERF.logic)*.05;PERF.draw+=(tL2-tL1-PERF.draw)*.05;
   perfT-=rdt;if(perfT<=0){perfT=.5;if(showFps&&gameOn)fpsBox();if(!$('#perf').hidden)perfInfo();}
