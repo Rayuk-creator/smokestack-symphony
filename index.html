@@ -265,7 +265,7 @@ const EN={
   'Riquadro':'Box select','Trascina per selezionare più unità':'Drag to select several units',
   'Sali di livello':'Level up','Livello {0}: sblocca nuovi edifici e unità, popolazione massima {1}':'Level {0}: unlocks new buildings and units, max population {1}',
   'Tocca il terreno per posizionare {0}':'Tap the ground to place: {0}','Clic sul terreno per posizionare {0} · tasto destro per annullare':'Click the ground to place: {0} · right-click to cancel',
-  'Fermi':'Stop','Interrompi gli ordini':'Cancel all orders','MUOVI':'MOVE','AVANZA':'ATK-MOVE','Solo muovi':'Move only','Avanzata':'Attack-move',
+  'Fermi':'Stop','Interrompi gli ordini':'Cancel all orders','PREGA':'PRAY','Prega':'Pray','Torna a pregare davanti al Santuario oscuro':'Go back to praying in front of the Dark Sanctuary','Serve un Santuario oscuro':'Requires a Dark Sanctuary','MUOVI':'MOVE','AVANZA':'ATK-MOVE','Solo muovi':'Move only','Avanzata':'Attack-move',
   'Solo movimento: le unità ignorano i nemici finché non arrivano':'Move only: units ignore enemies until they arrive','Avanzata: le unità attaccano i nemici lungo la strada':'Attack-move: units attack enemies along the way',
   'Cambia come si muovono le unità':'Change how units move','Fatto':'Done','Non disponibile':'Not available',
   'Tocca il terreno per posizionarlo.':'Tap the ground to place it.','Clic sul terreno per posizionarlo, tasto destro per annullare.':'Click the ground to place it, right-click to cancel.',
@@ -2934,6 +2934,8 @@ function updateUnit(u,dt){if(u.dead){u.deathT+=dt;return;}
   const o=u.order;
   if(o&&(o.kind==='gather'||o.kind==='return'||o.kind==='build')){workerLogic(u,dt);return;}
   if(o&&o.kind==='pray'){prayLogic(u,dt);return;}
+  /* accolito senza ordini: dopo 3 secondi torna da solo a pregare */
+  if(u.T.pray){if(o)u.idleT=0;else{u.idleT=(u.idleT||0)+dt;if(u.idleT>3){u.idleT=0;sendPray(u);}return;}}
   if(o&&o.kind==='attack'){if(o.ent.dead)u.order=null;else if(!visibleTo(u.team,o.ent)){if(shownTo(u.team,o.ent)){u.target=null;if(o.ent.isB){const a=approach(o.ent,u,1);goTo(u,a.x,a.z,dt);}else goTo(u,o.ent.pos.x,o.ent.pos.z,dt);return;}u.order=null;}else u.target=o.ent;}
   if(o&&o.kind==='move'){u.target=null;if(goTo(u,o.x,o.z,dt)<.4)u.order=null;return;}
   u.acqT-=dt;if(!u.target&&!u.T.worker&&!u.T.pray&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=acquire(u,o?8:7);}
@@ -3220,6 +3222,8 @@ canvas.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);
 function tapAt(p){if(placing){tryPlace(p.x,p.y);return;}const t=performance.now();const vt=viewTeam();
   const e=pickEnt(p.x,p.y,x=>!x.isN);const us=ownUnitsSel();
   if(e&&e.isB&&e.team===0&&!e.built&&us.some(u=>u.T.worker)){order(p.x,p.y);return;}
+  /* accoliti selezionati + tocco sul proprio Santuario oscuro = vanno a pregare (prima il tocco selezionava il Santuario) */
+  if(e&&e.isB&&e.team===0&&e.built&&e.T.trains.some(k=>TYPES[k].pray)&&us.some(u=>u.T.pray)){order(p.x,p.y);return;}
   if(e&&(e.team===0||vt<0)&&!(e.team===1&&us.length)){if(!e.isB&&lastTap.e===e&&t-lastTap.t<350)setSel(units.filter(v=>v.team===e.team&&!v.dead&&v.key===e.key&&onScreen(v)),false);
     else if(e.isB)setSel([e],false);else{if(!p.shift)selection.forEach(s=>{if(s.isB)selection.delete(s);});setSel([e],p.shift);}lastTap={t,e};return;}
   lastTap={t:0,e:null};
@@ -3232,7 +3236,7 @@ function endPointer(e){const p=ptrs.get(e.pointerId);if(!p)return;ptrs.delete(e.
   if(!gameOn||ended){gesture=null;boxEl.hidden=true;return;}
   if(gesture.kind==='box'){const x1=Math.min(p.sx,p.x),x2=Math.max(p.sx,p.x),y1=Math.min(p.sy,p.y),y2=Math.max(p.sy,p.y);const tm=picks.mode==='watch'?-1:0;
     const list=units.filter(u=>{if(u.dead||(tm>=0&&u.team!==tm))return false;const r=entRect(u);return r.cx>=x1&&r.cx<=x2&&r.y1-6>=y1&&r.y0<=y2;});
-    const army=list.filter(u=>!u.T.worker);if(list.length)setSel(army.length?army:list,p.shift);boxEl.hidden=true;if(boxMode){boxMode=false;setBoxUI();}}
+    const army=list.filter(u=>!u.T.worker&&!u.T.pray);if(list.length)setSel(army.length?army:list,p.shift);boxEl.hidden=true;if(boxMode){boxMode=false;setBoxUI();}}
   else if(gesture.kind==='pending'){if(p.type==='mouse'&&p.btn===2){if(placing)cancelPlacing();else order(p.x,p.y);}else if(p.type!=='mouse'||p.btn===0)tapAt(p);}
   gesture=ptrs.size?{kind:'none'}:null;}
 canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);gesture=null;boxEl.hidden=true;});
@@ -3245,7 +3249,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.k
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>keys.clear());
 function clampCam(){cam.tx=Math.max(-54,Math.min(54,cam.tx));cam.tz=Math.max(-42,Math.min(42,cam.tz));}
 function updateKeys(dt){const s=cam.dist*.75*dt;if(keys.has('a')||keys.has('arrowleft'))cam.tx-=s;if(keys.has('d')||keys.has('arrowright'))cam.tx+=s;if(keys.has('w')||keys.has('arrowup'))cam.tz-=s;if(keys.has('s')||keys.has('arrowdown'))cam.tz+=s;clampCam();}
-function selectArmy(){const t=picks.mode==='watch'?-1:0;setSel(units.filter(u=>!u.dead&&!u.T.worker&&(t<0||u.team===t)),false);}
+function selectArmy(){const t=picks.mode==='watch'?-1:0;setSel(units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)),false);}
 function selectIdleWorker(){const ws=units.filter(u=>u.team===0&&!u.dead&&u.T.worker&&!u.order);if(!ws.length){toast(LT('Nessun lavoratore inattivo'));return;}const w=ws[(lastIdle++)%ws.length];setSel([w],false);cam.tx=w.pos.x;cam.tz=w.pos.z+4;}
 let lastIdle=0;
 function focusBase(){const hq=blds.find(b=>b.team===0&&!b.dead&&b.T.role==='hq')||blds.find(b=>b.team===0&&!b.dead);if(!hq)return;setSel([hq],false);cam.tx=hq.pos.x;cam.tz=hq.pos.z-4;}
@@ -3311,8 +3315,10 @@ function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams
   const us=sel.filter(u=>!u.isB);const allW=us.every(u=>u.T.worker);const out=[];
   if(allW)RACE_B[tm.race].filter(k=>BT[k].role!=='hq').forEach(k=>{const T=BT[k];const why=buildBlock(tm,k);out.push(btn({glyph:T.name.split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase(),label:T.name,cost:T.cost,dis:!!why,lock:T.lvl>tm.level?LT('Liv.')+' '+T.lvl:null,why,bld:1,
     on:()=>{if(buildBlock(tm,k)){toast(buildBlock(tm,k));return;}placing={key:k,workers:us};selDirty=true;toast(coarse?LTf('Tocca il terreno per posizionare {0}',T.name):LTf('Clic sul terreno per posizionare {0} · tasto destro per annullare',T.name));},title:T.name+' · '+costText(T.cost,tm.race)+' · '+T.info}));});
+  const pr=us.filter(u=>u.T.pray),allP=pr.length===us.length;
+  if(pr.length)out.push(btn({glyph:LT('PREGA'),label:LT('Prega'),on:()=>{let ok=0;pr.forEach(u=>{if(u.order&&u.order.kind==='pray'||sendPray(u))ok++;});if(ok<pr.length)toast(prayShrines(0).length?LTf('Al massimo {0} accoliti per Santuario',PRAY_MAX):LT('Serve un Santuario oscuro'));},title:LT('Torna a pregare davanti al Santuario oscuro')}));
   out.push(btn({glyph:'STOP',label:LT('Fermi'),on:()=>us.forEach(u=>{u.order=null;u.target=null;}),title:LT('Interrompi gli ordini')}));
-  if(!allW)out.push(btn({glyph:moveOnly?LT('MUOVI'):LT('AVANZA'),label:moveOnly?LT('Solo muovi'):LT('Avanzata'),pressed:moveOnly,on:()=>{moveOnly=!moveOnly;selDirty=true;toast(moveOnly?LT('Solo movimento: le unità ignorano i nemici finché non arrivano'):LT('Avanzata: le unità attaccano i nemici lungo la strada'));},title:LT('Cambia come si muovono le unità')}));
+  if(!allW&&!allP)out.push(btn({glyph:moveOnly?LT('MUOVI'):LT('AVANZA'),label:moveOnly?LT('Solo muovi'):LT('Avanzata'),pressed:moveOnly,on:()=>{moveOnly=!moveOnly;selDirty=true;toast(moveOnly?LT('Solo movimento: le unità ignorano i nemici finché non arrivano'):LT('Avanzata: le unità attaccano i nemici lungo la strada'));},title:LT('Cambia come si muovono le unità')}));
   out.push(base[0]);return out;}
 function renderCmd(){const el=$('#cmd');cmdSpecs=buildSpecs();const race=teams[0].race;
   const h=cmdSpecs.map((s,i)=>'<button type="button" class="cb'+(s.bld?' bld':'')+(s.done?' done':'')+'" data-i="'+i+'"'+(s.dis?' aria-disabled="true"':'')+(s.pressed?' aria-pressed="true"':'')+' title="'+esc(s.title||s.label)+'">'+
