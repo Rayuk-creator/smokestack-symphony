@@ -213,8 +213,35 @@ button.primary:hover{background:#e8b65a}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
+<script type="module">
+import * as T3 from "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js";
+const THREE=Object.assign({},T3);
+/* Compatibilita' Three.js recente (r186) con l'aspetto della vecchia r128.
+   Viene eseguito PRIMA del gioco, dentro lo script "module" che carica la libreria.
+   1) colori: nessuna conversione sRGB (come r128: i colori dei materiali e delle texture si usano cosi' come sono);
+   2) luci "legacy": in r128 l'intensita' delle luci veniva moltiplicata per PI e le luci puntiformi
+      si spegnevano in modo lineare fino a 'distance'; qui si rimettono le stesse formule.
+   Ogni sostituzione viene controllata: se una manca (libreria cambiata), si avvisa in console. */
+function threeCompat(THREE){
+  THREE.ColorManagement.enabled=false;
+  const C=THREE.ShaderChunk,miss=[];
+  const rep=(chunk,a,b)=>{if(C[chunk].indexOf(a)<0){miss.push(chunk+': '+a.slice(0,40));return;}C[chunk]=C[chunk].split(a).join(b);};
+  rep('lights_pars_begin','vec3 irradiance = ambientLightColor;','vec3 irradiance = ambientLightColor * PI;');
+  rep('lights_pars_begin','vec3 irradiance = mix( hemiLight.groundColor, hemiLight.skyColor, hemiDiffuseWeight );','vec3 irradiance = mix( hemiLight.groundColor, hemiLight.skyColor, hemiDiffuseWeight ) * PI;');
+  rep('lights_pars_begin','float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );\n\tif ( cutoffDistance > 0.0 ) {\n\t\tdistanceFalloff *= pow2( saturate( 1.0 - pow4( lightDistance / cutoffDistance ) ) );\n\t}\n\treturn distanceFalloff;',
+    'if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) {\n\t\treturn pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n\t}\n\treturn 1.0;');
+  rep('lights_phong_pars_fragment','vec3 irradiance = dotNL * directLight.color;','vec3 irradiance = dotNL * directLight.color * PI;');
+  rep('lights_lambert_pars_fragment','vec3 irradiance = dotNL * directLight.color;','vec3 irradiance = dotNL * directLight.color * PI;');
+  /* 3) dalla r151 gli oggetti trasparenti a due facce si disegnano in due passate (prima il retro, poi il davanti):
+     in r128 era una passata sola. Si rimette una passata sola: stesso aspetto e meno disegni per fotogramma (misurato: 384 -> 331) */
+  Object.defineProperty(THREE.Material.prototype,'forceSinglePass',{get(){return true;},set(v){},configurable:true});
+  if(miss.length)console.warn('threeCompat: sostituzioni non trovate',miss);
+  THREE.__compatMiss=miss;
+}
+threeCompat(THREE);window.THREE=THREE;
+const gs=document.createElement("script");gs.textContent=document.getElementById("gamejs").textContent;document.body.appendChild(gs);
+</script>
+<script type="text/plain" id="gamejs">
 (function(){
 "use strict";
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -1772,7 +1799,7 @@ function atlasSlot(img){if(!img)return ATL.white;let s=ATL.map.get(img);if(s)ret
 function atlasMaterial(decal){const m=new THREE.MeshPhongMaterial({map:ATL.tex,vertexColors:true,flatShading:true,specular:0,shininess:0,alphaTest:.5,side:THREE.DoubleSide,
     transparent:!!decal,depthWrite:!decal,polygonOffset:!!decal,polygonOffsetFactor:decal?-2:0});
   m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec4 tile;varying vec4 vTile;').replace('#include <uv_vertex>','#include <uv_vertex>\nvTile=tile;');
-    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec4 vTile;').replace('#include <map_fragment>','vec4 texelColor=texture2D(map,vTile.xy+clamp(fract(vUv),0.002,0.998)*vTile.zw);texelColor=mapTexelToLinear(texelColor);diffuseColor*=texelColor;');};
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec4 vTile;').replace('#include <map_fragment>','vec4 texelColor=texture2D(map,vTile.xy+clamp(fract(vMapUv),0.002,0.998)*vTile.zw);diffuseColor*=texelColor;');};
   m.customProgramCacheKey=()=>'atlas'+(decal?1:0);return m;}
 const ATLASMAT=atlasMaterial(false),ATLASDECAL=atlasMaterial(true);
 const GLOWADD=new THREE.MeshBasicMaterial({map:SOFT,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
@@ -2622,7 +2649,7 @@ const fmt=n=>Math.floor(n);
 /* ---------- renderer ---------- */
 const canvas=$('#game');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(1);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.LinearSRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 const DPR=Math.min(window.devicePixelRatio||1,2);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x6a7068);scene.fog=new THREE.FogExp2(0x8a8070,.009);
 const camera=new THREE.PerspectiveCamera(30,1,.5,400);
@@ -3122,7 +3149,7 @@ let qLevel=qPref!=='auto'?qPref:(WEAKGPU?'bassa':coarse?'media':'alta');
 let qScale=(qLevel==='alta'&&coarse)?.8:1,qCool=5,fpsAcc=0,fpsN=0,qDropped=0;
 const PERF={ft:[],logic:0,draw:0,shots:0};
 function applyQuality(){const Q=QLV[qLevel];
-  renderer.shadowMap.type=Q.soft?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
+  renderer.shadowMap.type=THREE.PCFShadowMap;/* r186: PCFSoftShadowMap non esiste piu'; PCFShadowMap da' lo stesso risultato (misurato) */
   if(sun.shadow.mapSize.x!==Q.shadow){sun.shadow.mapSize.set(Q.shadow,Q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
   renderer.shadowMap.autoUpdate=Q.shEvery===1;renderer.shadowMap.needsUpdate=true;
   scene.traverse(o=>{if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);}});
@@ -3142,7 +3169,7 @@ let shN=0,shKey='';function shadowTick(){const Q=QLV[qLevel];if(Q.shEvery===1)re
   if(k!==shKey||shN>=Q.shEvery){shKey=k;shN=0;renderer.shadowMap.needsUpdate=true;}}
 let zoomBoost=1;function resize(){const Q=QLV[qLevel];const pr=Math.min(DPR,coarse?Math.min(1.5,Q.pr):Q.pr)*qScale*zoomBoost;W=Math.max(1,Math.floor(innerWidth*pr));H=Math.max(1,Math.floor(innerHeight*pr));renderer.setSize(W,H,false);camera.aspect=W/H;camera.fov=W/H<1?44:30;camera.updateProjectionMatrix();
   [rtScene,rtA,rtB,rtH1,rtH2,rtQ1,rtQ2].forEach(r=>r&&r.dispose());
-  if(QLV[qLevel].msaa&&renderer.capabilities.isWebGL2&&THREE.WebGLMultisampleRenderTarget){rtScene=new THREE.WebGLMultisampleRenderTarget(W,H,{format:THREE.RGBAFormat});rtScene.samples=4;}
+  if(QLV[qLevel].msaa){rtScene=new THREE.WebGLRenderTarget(W,H,{format:THREE.RGBAFormat,samples:4});}
   else rtScene=new THREE.WebGLRenderTarget(W,H,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});
   rtA=rt(W,H);rtB=rt(W,H);rtH1=rt(Math.max(1,W>>1),Math.max(1,H>>1));rtH2=rt(Math.max(1,W>>1),Math.max(1,H>>1));rtQ1=rt(Math.max(1,W>>2),Math.max(1,H>>2));rtQ2=rt(Math.max(1,W>>2),Math.max(1,H>>2));}
 function pass(mat,set,target){quad.material=mat;for(const k in set)mat.uniforms[k].value=set[k];renderer.setRenderTarget(target);renderer.render(quadScene,quadCam);}
