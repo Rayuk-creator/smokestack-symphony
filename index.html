@@ -1029,7 +1029,35 @@ const SOFT=softTex();
 const glowSprite=(col,op,s)=>{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,color:col,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false}));if(s)sp.scale.set(s,s,1);return sp;};
 const shadowMat=new THREE.MeshBasicMaterial({map:SOFT,color:0x000000,transparent:true,opacity:.5,depthWrite:false});
 const shadowGeo=new THREE.PlaneGeometry(1,1);
-function blob(parent,x,y,z,sx,sz,op){const m=new THREE.Mesh(shadowGeo,op?new THREE.MeshBasicMaterial({map:SOFT,color:0,transparent:true,opacity:op,depthWrite:false}):shadowMat);m.rotation.x=-Math.PI/2;m.position.set(x,y+.035,z);m.scale.set(sx,sz||sx*.7,1);parent.add(m);return m;}
+/* ---------- ombre di contatto (fase 2 grafica) ----------
+   Un'ombra morbida sotto edifici, giacimenti e decorazioni, perche' sembrino appoggiati al terreno.
+   Tutte in UN solo disegno (InstancedMesh): ogni oggetto registrato con CONTACT.add(oggetto, larghezza, profondita', forza)
+   viene seguito nella sua posizione nel mondo; se l'oggetto e' nascosto (es. Torre occulta non scoperta) o tolto dalla scena,
+   la sua ombra sparisce. Le posizioni si ricalcolano ogni 0,2 s (o subito con CONTACT.dirty=true): pochi calcoli, nessun disegno in piu'. */
+/* altezza delle ombre sul suolo: sopra lo strato dipinto del terreno (misurato il 27 ottobre: a 0,04 quasi tutte coperte, da 0,06 visibili) */
+const CONTACT_Y=.07;
+const CONTACT=(()=>{const MAX=2048,L=[];let mesh=null,t=0;const _v=new THREE.Vector3(),_m=new THREE.Matrix4(),_q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-Math.PI/2),_s=new THREE.Vector3(),_c=new THREE.Color();
+  function tex(){const c=mkCanvas(64,64),g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.35,'rgba(255,255,255,.8)');gr.addColorStop(.7,'rgba(255,255,255,.28)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);}
+  function make(scene){if(typeof Image==='undefined')return null; /* simulatore: niente grafica */
+    const m=new THREE.MeshBasicMaterial({map:tex(),color:0x000000,transparent:true,depthWrite:false});
+    m.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\n#ifdef USE_COLOR\n\tdiffuseColor.a *= vColor.r;\n#endif');};
+    m.customProgramCacheKey=()=>'contactShadow';
+    const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),m,MAX);im.count=0;im.frustumCulled=false;im.renderOrder=1; /* dopo le chiazze dipinte del suolo (decal, ordine 0), prima delle ombre delle nuvole (2) */im.userData.contact=1;
+    im.setColorAt(0,_c.setRGB(0,0,0));scene.add(im);return im;}
+  /* 1 = visibile, 0 = nella scena ma nascosto, -1 = fuori dalla scena */
+  function state(o,scene){let v=1;while(o){if(!o.visible)v=0;if(o===scene)return v;o=o.parent;}return -1;}
+  return {L,dirty:true,
+    add(obj,w,d,k){if(typeof Image==='undefined'||!obj)return;const e={o:obj,w,d:d||w*.55,k:k==null?.5:k,miss:0,p:null};obj.userData.cs=e;L.push(e);this.dirty=true;},
+    /* un oggetto fuso in un blocco unico (perf.js bakeGroup): l'ombra resta nel punto dov'era, legata al blocco */
+    baked(o,G){const e=o.userData.cs;if(!e)return;e.p=G.worldToLocal(new THREE.Vector3().setFromMatrixPosition(o.matrixWorld));e.o=G;this.dirty=true;},
+    update(scene,dt){t-=dt;if(!this.dirty&&t>0)return;t=.2;this.dirty=false;if(!mesh||mesh.parent!==scene){mesh=make(scene);if(!mesh)return;}
+      let n=0;for(let i=L.length-1;i>=0;i--){const e=L[i];
+        const st=state(e.o,scene);if(st<1){if(st<0){if(++e.miss>25)L.splice(i,1);}else e.miss=0;continue;}e.miss=0;if(n>=MAX)continue;
+        if(e.p)e.o.localToWorld(_v.copy(e.p));else e.o.getWorldPosition(_v);_v.y=Math.max(_v.y,gy(_v.x,_v.z))+CONTACT_Y;_m.compose(_v,_q,_s.set(e.w,e.d,1));mesh.setMatrixAt(n,_m);mesh.setColorAt(n,_c.setRGB(e.k,e.k,e.k));n++;}
+      mesh.count=n;mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;},
+    get count(){return mesh?mesh.count:0;}};})();
+function blob(parent,x,y,z,sx,sz,op){const m=new THREE.Mesh(shadowGeo,op?new THREE.MeshBasicMaterial({map:SOFT,color:0,transparent:true,opacity:op,depthWrite:false}):shadowMat);m.rotation.x=-Math.PI/2;m.position.set(x,y+CONTACT_Y,z);m.scale.set(sx,sz||sx*.7,1);m.renderOrder=1;parent.add(m);return m;}
 
 /* ---------- terreno ---------- */
 /* MAPPA GRANDE (versione 54): +40% per lato rispetto alla versione 53, con altipiani, rampe e scogliere sul bordo.
@@ -1237,7 +1265,7 @@ function treeCanvas(seed,kind){const W=32,H=48;return canv('tree'+seed+kind,(g)=
     for(let k=0;k<10;k++)p.px(Math.floor(8+r()*16),Math.floor(6+r()*16),'#a6cc66');if(kind==='lantern'){p.cap(22,24,22,28,.6,ramp('#2a2420'));p.ell(22,30,1.8,2.2,ramp('#c08a34'));p.px(22,30,'#fff1a8');}}
   else{p.cap(9,28,5,20,1,trunk);p.cap(24,26,28,18,1,trunk);p.cap(16,26,16,14,1.6,trunk);p.cap(16,18,21,12,1,trunk);}
   p.render(g,0,0);},W,H);}
-function decoSprite(parent,c,x,z,sx,sy,y){if(!c._mat)c._mat=new THREE.SpriteMaterial({map:nearest(new THREE.CanvasTexture(c)),alphaTest:.5});const sp=new THREE.Sprite(c._mat);sp.center.set(.5,0);sp.position.set(x,y==null?topAt(x,z):y,z);sp.scale.set(sx,sy,1);parent.add(sp);return sp;}
+function decoSprite(parent,c,x,z,sx,sy,y){if(!c._mat)c._mat=new THREE.SpriteMaterial({map:nearest(new THREE.CanvasTexture(c)),alphaTest:.5});const sp=new THREE.Sprite(c._mat);sp.center.set(.5,0);sp.position.set(x,y==null?topAt(x,z):y,z);sp.scale.set(sx,sy,1);parent.add(sp);if(y==null)CONTACT.add(sp,sx*.8,sx*.4,sx>=2?.7:.45);return sp;}
 
 /* ---------- fumo condiviso ---------- */
 const SMAX=900;const smokeSys={sources:[],parts:[],pts:null};
@@ -1299,7 +1327,7 @@ function buildEnvironment(scene){
     const m=addDecal(scene,ty==='dirt'?'thalren':'path',.9+R()*1.6,gy(x,z)+.012+R()*.006);m.position.x=x;m.position.z=z;}
   for(let k=0;k<200;k++){const x=(R()<.5?-1:1)*(28+R()*28),z=-41+R()*82;if(!HOT[region(x,z)]||riverD(x,z)<3||blocked(x,z,1.5)||!flatAt(x,z,1.2)||tileType(x,z)==='plate'||tileType(x,z)==='crack')continue;const m=addDecal(scene,'vent',.9+R()*1.4,gy(x,z)+.013);m.position.x=x;m.position.z=z;}
   const okDeco=(x,z)=>riverD(x,z)>3.4&&!inBase(x,z)&&!nearResource(x,z,2.4)&&!blocked(x,z,1.2)&&flatAt(x,z,.7);
-  for(let k=0;k<250;k++){const x=(R()<.5?-1:1)*(34+R()*22),z=-41+R()*82;if(!okDeco(x,z))continue;const rg=region(x,z);if(rg==='swamp'){if(k%3)continue;decoSprite(scene,treeCanvas(k%4+30,'dead'),x,z,2.8,4.2);blob(scene,x,topAt(x,z),z,2);continue;}if(rg!=='forest')continue;const s=.9+R()*.35;decoSprite(scene,treeCanvas(k%4+1,k%6===0?'lantern':'leafy'),x,z,3.2*s,4.8*s);blob(scene,x,topAt(x,z),z,2.4*s);}
+  for(let k=0;k<250;k++){const x=(R()<.5?-1:1)*(34+R()*22),z=-41+R()*82;if(!okDeco(x,z))continue;const rg=region(x,z);if(rg==='swamp'){if(k%3)continue;decoSprite(scene,treeCanvas(k%4+30,'dead'),x,z,2.8,4.2);continue;}if(rg!=='forest')continue;const s=.9+R()*.35;decoSprite(scene,treeCanvas(k%4+1,k%6===0?'lantern':'leafy'),x,z,3.2*s,4.8*s);blob(scene,x,topAt(x,z),z,2.4*s);}
   for(let k=0;k<28;k++){const e=k%2?-1:1;const x=e*(PLX+3.5+R()*2),z=-e*(R()*43-3),s=.9+R()*.3; /* oltre le rocce del bordo, senza coprire il campo */decoSprite(scene,treeCanvas(k%4+5,'leafy'),x,z,3.2*s,4.8*s);}
   for(let k=0;k<11;k++){const x=34+R()*28,z=-(PLZ+2.5)-R()*1.2,s=1.1+R()*.3;decoSprite(scene,treeCanvas(k+9,'leafy'),x,z,3.2*s,4.8*s);}
   for(let k=0;k<78;k++){const x=(R()<.5?-1:1)*(34+R()*21),z=-38+R()*76;if(region(x,z)!=='volcano'||!okDeco(x,z))continue;decoSprite(scene,treeCanvas(k+20,'dead'),x,z,2.6,3.9);}
@@ -1596,7 +1624,7 @@ const PROPS={
     const b=new THREE.Mesh(new THREE.BoxGeometry(.16,.18,.16),pmat('lb'+col,()=>new THREE.MeshBasicMaterial({color:new THREE.Color(col).multiplyScalar(1.6)})));b.position.set(x,1.45,z);G.add(b);},
   candle(G,x,z){const m=add(G,new THREE.CylinderGeometry(.06,.07,.35,6),pmat('cand',()=>new THREE.MeshPhongMaterial({color:0xe0d6c0})),x,.17,z);m.castShadow=false;const g=glowSprite(0xffc36b,.6,.4);g.position.set(x,.42,z);G.add(g);},
   tire(G,x,z){add(G,new THREE.TorusGeometry(.32,.14,6,12),pmat('tire',()=>phong(ptex('rubber',0,54))),x,.14,z,Math.PI/2,0,0);},
-  sprite(G,c,x,z,sx,sy){const sp=new THREE.Sprite(c._mat||(c._mat=new THREE.SpriteMaterial({map:nearest(new THREE.CanvasTexture(c)),alphaTest:.5})));sp.center.set(.5,0);sp.position.set(x,0,z);sp.scale.set(sx,sy,1);G.add(sp);},
+  sprite(G,c,x,z,sx,sy){const sp=new THREE.Sprite(c._mat||(c._mat=new THREE.SpriteMaterial({map:nearest(new THREE.CanvasTexture(c)),alphaTest:.5})));sp.center.set(.5,0);sp.position.set(x,0,z);sp.scale.set(sx,sy,1);G.add(sp);CONTACT.add(sp,sx*.8,sx*.4,.45);},
   rock(G,x,z,s,dark){const m=add(G,new THREE.DodecahedronGeometry(.3*s,0),pmat('pr'+(dark?1:0),()=>new THREE.MeshPhongMaterial({color:dark?0x34302c:0x6d655c,flatShading:true})),x,.12*s,z,Math.random()*3,Math.random()*3,0);m.scale.y=.7;}
 };
 function ring(n,r0,r1,f){for(let k=0;k<n;k++){const a=k/n*Math.PI*2+(Math.random()-.5)*.5,rr=r0+Math.random()*(r1-r0);f(Math.cos(a)*rr,Math.sin(a)*rr,k);}}
@@ -1779,7 +1807,7 @@ function bakeGroup(G,noProxy){G.updateMatrixWorld(true);const inv=new THREE.Matr
     else if(o.isSprite&&o.material&&o.material.map&&o.material.map.image&&o.material.alphaTest>0&&!o.material.transparent){const g=spriteGeo(o,rel);g.computeVertexNormals();tagGeo(g,atlasSlot(o.material.map.image),o.material.color);
       let b=buckets.get('atl');if(!b)buckets.set('atl',b={mat:ATLASMAT,atlas:1,cast:false,recv:false,ro:0,geos:[]});b.geos.push(g);remove.push(o);}
     else if(o.isSprite&&o.material){const {m,k}=spriteMeshMat(o.material);let b=buckets.get(k);if(!b)buckets.set(k,b={mat:m,cast:false,recv:false,ro:o.renderOrder,geos:[]});b.geos.push(spriteGeo(o,rel));remove.push(o);}});
-  for(const o of remove)if(o.parent)o.parent.remove(o);
+  for(const o of remove){if(o.userData.cs)CONTACT.baked(o,G);if(o.parent)o.parent.remove(o);}
   const shadowGeos=[];
   for(const b of buckets.values()){if(b.cast&&!noProxy)for(const g of b.geos)shadowGeos.push(g.clone());const mesh=new THREE.Mesh(b.atlas?mergeAtlas(b.geos):mergeGeos(b.geos,b.col),b.mat);mesh.castShadow=noProxy?b.cast:false;mesh.receiveShadow=b.recv;mesh.renderOrder=b.ro;mesh.userData.baked=1;G.add(mesh);}
   if(shadowGeos.length){const sm=new THREE.Mesh(mergeGeos(shadowGeos,false),SHADOWPROXY);sm.castShadow=true;sm.receiveShadow=false;sm.userData.baked=1;G.add(sm);}
@@ -2354,7 +2382,7 @@ function pxAnim(G,key,x,z,w,fps){if(typeof Image==='undefined')return typeof EXT
   sp.center.set(.5,.03);sp.position.set(x,0,z);sp.scale.set(w,w*T.ar,1);sp.userData.keep=1;G.add(sp);MAP2.anim.push({tex:T.tex,n:T.n,fps,ph:Math.random()*T.n});return sp;}
 function pxObj(G,key,x,z,w,shadow){if(typeof Image==='undefined')return typeof EXTPROP!=='undefined'&&EXTPROP[key]?{}:null; /* simulatore: stessi ostacoli, niente grafica */
   const o=pxObjMat(key);if(!o)return null;const sp=new THREE.Sprite(o.mat);sp.center.set(.5,.04);sp.position.set(x,0,z);sp.scale.set(w,w*o.ar,1);
-  if(o.ar===1&&!(o.mat.map.image&&o.mat.map.image.complete))(o.wait=o.wait||[]).push(sp);sp.userData.keep=1;G.add(sp);if(shadow)blob(G,x,0,z,shadow,shadow*.55,.45);return sp;}
+  if(o.ar===1&&!(o.mat.map.image&&o.mat.map.image.complete))(o.wait=o.wait||[]).push(sp);sp.userData.keep=1;G.add(sp);if(shadow)CONTACT.add(sp,shadow,shadow*.55,.6);return sp;}
 
 /* ---------- foresta antica: il Cuore dell'Albero e i ruscelli di linfa ---------- */
 function treeHeart(G,x,z,ry){if(pxHeart(G,x,z))return;const g=grp(G,x,z,ry);const p=P.t;const bark=p.bark,glow=glowMat(1.9,1.25,.35);
@@ -2634,7 +2662,7 @@ const NODEFX={vent:{glow:[0xff6a1f,.45,2.4,1.1]},sap:{glow:[0x8dff5a,.3,2,1.2]},
 function extNode(kind){const D=typeof EXTNODE!=='undefined'&&EXTNODE[kind],im=EXTNODEIMG[kind];if(!D||!im)return null;
   let tex=NODETEX[kind];if(!tex){tex=nearest(new THREE.Texture(im));if(im.complete&&im.naturalWidth)tex.needsUpdate=true;else im.addEventListener('load',()=>{tex.needsUpdate=true;});
     tex.repeat.set(1/D.n,1);tex.userData={n:D.n,fps:D.fps};NODETEX[kind]=tex;}
-  const G=new THREE.Group();const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,alphaTest:.5}));sp.center.set(.5,D.cy);sp.scale.set(D.w,D.w,1);G.add(animate(sp));
+  const G=new THREE.Group();const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,alphaTest:.5}));sp.center.set(.5,D.cy);sp.scale.set(D.w,D.w,1);G.add(animate(sp));CONTACT.add(G,D.w*.8,D.w*.42,.75);
   const F=NODEFX[kind]||{};if(F.glow){const g=glowSprite(F.glow[0],F.glow[1],F.glow[2]);g.position.set(0,F.glow[3],.3);G.add(g);}
   if(F.spark){const [col,n,sp2]=F.spark;for(let i=0;i<n;i++){const s=glowSprite(col,0,.45);s.position.set((Math.random()-.5)*D.w*.5,.6+Math.random()*D.w*.35,.5);s.userData.ph=Math.random()*20;s.userData.sp=sp2*(.7+Math.random()*.6);G.add(animate(s));NODESPARK.push(s);}}
   return G;}
@@ -3096,7 +3124,7 @@ const hpCol=r=>r>.6?0x8fd16a:r>.3?0xe8b04a:0xe0503e;
 function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Math.max(0,1-u.deathT/1.1);u.sp.position.y=Y-u.deathT*.35;u.ring.visible=false;u.bg.visible=u.fg.visible=false;u.sh.visible=u.deathT<.6;if(u.cs)u.cs.visible=false;return;}
   u.anim+=dt;let f;if(u.atkFlash>0)f=7;else if(u.working)f=Math.floor(u.anim/.32)%2?6:7;else if(u.winding)f=6;else if(u.moving)f=2+Math.floor(u.anim/.11)%4;else f=Math.floor(u.anim/.6)%2;
   u.atkFlash=Math.max(0,u.atkFlash-dt);u.hitFlash=Math.max(0,u.hitFlash-dt);const fl=u.face<0,setF=t=>{t.repeat.x=fl?-1/FR:1/FR;t.offset.x=fl?(f+1)/FR:f/FR;};setF(u.tex);if(u.texB){const w=(u.back&&!u.working&&!u.winding&&u.atkFlash<=0)?u.texB:u.tex;setF(w);if(u.mat.map!==w){u.mat.map=w;u.mat.needsUpdate=true;}}
-  const S=uScale(u.T);u.sp.position.set(u.pos.x,Y,u.pos.z);u.sp.scale.set(S,S,1);u.sh.position.set(u.pos.x,Y+.035,u.pos.z);u.ring.position.set(u.pos.x,Y+.05,u.pos.z);
+  const S=uScale(u.T);u.sp.position.set(u.pos.x,Y,u.pos.z);u.sp.scale.set(S,S,1);u.sh.position.set(u.pos.x,Y+CONTACT_Y,u.pos.z);u.ring.position.set(u.pos.x,Y+.05,u.pos.z);
   const vt=viewTeam();const vis=shownTo(vt,u);u.sp.visible=u.sh.visible=vis;u.ring.visible=vis&&(selection.has(u)||u===hoverEnt);
   if(u.T.stealth){u.mat.opacity=now<u.revealUntil?1:(u.team===vt||vt<0?.55:.6);}
   const sel=selection.has(u),hov=u===hoverEnt;const rs=u.ring.userData.s;
@@ -3417,7 +3445,7 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   miniT-=rdt;if(gameOn&&miniT<=0){drawMini();miniT=.2;}
   if(toastT>0){placeToast();toastT-=rdt;if(toastT<=0)$('#toast').hidden=true;}
   satT-=rdt;if(satT<=0){satT=.2;drawSat();}
-  updateLightPool(rdt);shadowTick();
+  updateLightPool(rdt);shadowTick();CONTACT.update(scene,rdt);
   const tL1=performance.now();render();const tL2=performance.now();PERF.logic+=(tL1-tL0-PERF.logic)*.05;PERF.draw+=(tL2-tL1-PERF.draw)*.05;
   perfT-=rdt;if(perfT<=0){perfT=.5;if(showFps&&gameOn)fpsBox();if(!$('#perf').hidden)perfInfo();}
   requestAnimationFrame(frame);}
