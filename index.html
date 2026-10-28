@@ -170,6 +170,7 @@ button.primary:hover{background:#e8b65a}
       <div class="pick"><h2 id="lblFoe">Avversario</h2><div class="chips" id="pickFoe"></div></div>
       <div class="pick" id="diffBox"><h2>Difficoltà</h2><div class="chips three" id="pickDiff"></div></div>
       <div class="pick"><h2>Qualità grafica</h2><div class="chips pickQ"></div></div>
+      <div class="pick"><h2>Visuale</h2><div class="chips three pickV"></div></div>
       <div class="controls">
         <div><b>Mouse e tastiera</b>Clic o riquadro per selezionare. Clic su nemico, giacimento o terreno per dare ordini (anche col tasto destro). WASD o frecce e minimappa per la visuale, rotella per lo zoom.</div>
         <div><b>Tablet e telefono</b>Tocca per selezionare, doppio tocco per tutte le unità dello stesso tipo. Tocca un nemico, un giacimento o il terreno per dare ordini. Trascina per spostare la visuale, pizzica per lo zoom.</div>
@@ -182,6 +183,7 @@ button.primary:hover{background:#e8b65a}
       <div><div class="eyebrow">Partita in pausa</div><h1 id="menuTitle">Menu</h1></div>
       <div class="row"><button class="primary" id="bResume" type="button">Riprendi</button><button id="bRestart" type="button">Ricomincia</button><button id="bQuit" type="button">Cambia razze</button></div>
       <div class="pick"><h2>Qualità grafica</h2><div class="chips two pickQ"></div></div>
+      <div class="pick"><h2>Visuale</h2><div class="chips three pickV"></div></div>
       <div class="row"><button id="bPerf" type="button">Info prestazioni</button><button id="bFps" type="button" aria-pressed="false">FPS in gioco: no</button></div>
       <div class="row"><button class="bInstall" id="bInstall2" type="button" hidden>📲 Installa il gioco</button></div>
     </div>
@@ -270,7 +272,9 @@ const EN={
   'Minimappa':'Minimap','Comandi':'Commands','Prototipo · partita completa':'Prototype · full match',
   'Si parte con la base principale e cinque lavoratori già al lavoro. Raccogli le risorse della tua razza, costruisci, sali di livello e distruggi tutti gli edifici nemici. Ogni zona della mappa ha giacimenti per tutte le razze.':
     'You start with your main base and five workers already at work. Gather your race’s resources, build, level up and destroy every enemy building. Every area of the map has resource nodes for all races.',
-  'Modalità':'Mode','Il tuo esercito':'Your army','Avversario':'Opponent','Difficoltà':'Difficulty','Qualità grafica':'Graphics quality',
+  'Modalità':'Mode','Il tuo esercito':'Your army','Avversario':'Opponent','Difficoltà':'Difficulty','Qualità grafica':'Graphics quality','Visuale':'View','Vicina':'Close','Normale':'Normal','Lontana':'Far','unità più grandi':'bigger units','equilibrata':'balanced','si vede più campo':'see more of the field',
+  'Zona non ancora esplorata':'Area not explored yet','Tocca prima una zona verde':'Tap a green area first','Conferma':'Confirm','Costruisci qui':'Build here',
+  'Tocca una zona verde per {0}, poi premi Conferma':'Tap a green area for {0}, then press Confirm','Tocca una zona verde per scegliere il posto, poi premi Conferma.':'Tap a green area to choose the spot, then press Confirm.',
   'Mouse e tastiera':'Mouse and keyboard',
   'Clic o riquadro per selezionare. Clic su nemico, giacimento o terreno per dare ordini (anche col tasto destro). WASD o frecce e minimappa per la visuale, rotella per lo zoom.':
     'Click or drag a box to select. Click an enemy, a resource node or the ground to give orders (right-click works too). WASD, arrow keys or the minimap move the camera; the mouse wheel zooms.',
@@ -3256,7 +3260,7 @@ function startGame(){clearWorld();rollFoe();if(mapUsed||picks.seed!=null)newMap(
   [0,1].forEach(t=>{const race=teams[t].race;for(let i=0;i<5;i++){const w=L2W(t,-4.5-(i%2)*1.2,-4.5+i*.9);const u=spawnUnit(RACES[race].worker,t,w.x,w.z);teams[t].stats.made--;autoGather(u);}});
   if(nodeDecor)bakeGroup(nodeDecor);plazas.forEach(g=>scene.remove(g));plazas=[0,1].map(t=>buildPlaza(scene,t,teams[t].race));rebuildGrid();refreshSmoke();hgUpdate();HG.t=.25;tvReset();fogReset();
   gameOn=true;speed=1;setSpeedUI();
-  if(picks.mode==='watch'){cam.tx=0;cam.tz=0;cam.dist=84;}else{const cp=L2W(0,-3,-4);cam.tx=cp.x;cam.tz=cp.z;cam.dist=coarse?44:40;}
+  if(picks.mode==='watch'){cam.tx=0;cam.tz=0;cam.dist=84;}else{const cp=L2W(0,-3,-4);cam.tx=cp.x;cam.tz=cp.z;cam.dist=viewDist();}
   $('#start').hidden=true;$('#end').hidden=true;$('#menu').hidden=true;$('#bottom').hidden=false;$('#resbar').hidden=false;$('#topctl').hidden=false;
   $('#matchup').textContent=LTf('{0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name);
   document.documentElement.style.setProperty('--pc',RACES[teams[0].race].pc);document.documentElement.style.setProperty('--sc',RACES[teams[0].race].sc||'#888');
@@ -3499,11 +3503,12 @@ function order(cx,cy){if(picks.mode==='watch')return;const us=ownUnitsSel();cons
   list.forEach((u,i)=>{const r=Math.floor(i/cols),c=i%cols;const kind=moveOnly||u.T.worker||u.T.pray?'move':'amove';u.order={kind,x:p.x+(c-(cols-1)/2)*1.4,z:p.z+(r-(rows-1)/2)*1.4};u.target=null;u.path=null;});
   marker(p.x,p.z,moveOnly?0x6fb3a6:0x8fd16a);}
 function tryPlace(cx,cy){const p=groundAt(cx,cy);if(!p||!placing)return;const ws=placing.workers.filter(w=>!w.dead);if(!ws.length){cancelPlacing();return;}
+  if(FOG.on&&!fogExpXZ(p.x,p.z)){toast(LT('Zona non ancora esplorata'));return;}
   const b=placeBuilding(0,placing.key,p.x,p.z,ws);if(!b){toast(buildBlock(teams[0],placing.key)||LT('Posizione non valida: troppo vicino a edifici o giacimenti'));return;}
   marker(p.x,p.z,0x6fb3e6);cancelPlacing();}
 function cancelPlacing(){placing=null;ghost.visible=false;selDirty=true;}
 function updateGhost(cx,cy){if(!placing){ghost.visible=false;return;}const p=groundAt(cx,cy);if(!p){ghost.visible=false;return;}const r=BT[placing.key].r;ghost.visible=true;ghost.position.set(p.x,gy(p.x,p.z),p.z);ghost.scale.set(r,1,r);
-  const ok=placeOK(placing.key,p.x,p.z)&&!buildBlock(teams[0],placing.key);ghostDisc.material.color.set(ok?0x8fd16a:0xe0503e);ghostRing.material.color.set(ok?0x8fd16a:0xe0503e);}
+  const ok=zoneOK(placing.key,p.x,p.z)&&!buildBlock(teams[0],placing.key);ghostDisc.material.color.set(ok?0x8fd16a:0xe0503e);ghostRing.material.color.set(ok?0x8fd16a:0xe0503e);}
 
 /* ---------- puntatore ---------- */
 const ptrs=new Map();let gesture=null,boxMode=false,lastTap={t:0,e:null};
@@ -3522,7 +3527,7 @@ canvas.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);
   if(gesture.kind==='pending'&&Math.hypot(p.x-p.sx,p.y-p.sy)>thr)gesture.kind=((p.type==='mouse'&&p.btn===0&&!placing)||boxMode)?'box':'pan';
   if(gesture.kind==='box'){const x=Math.min(p.sx,p.x),y=Math.min(p.sy,p.y);Object.assign(boxEl.style,{left:x+'px',top:y+'px',width:Math.abs(p.x-p.sx)+'px',height:Math.abs(p.y-p.sy)+'px'});boxEl.hidden=false;}
   else if(gesture.kind==='pan'){const k=worldPerPx();cam.tx-=(p.x-px)*k;cam.tz-=(p.y-py)*k*1.35;clampCam();}});
-function tapAt(p){if(placing){tryPlace(p.x,p.y);return;}const t=performance.now();const vt=viewTeam();
+function tapAt(p){if(placing){if(p.type!=='mouse')touchPlace(p.x,p.y);else tryPlace(p.x,p.y);return;}const t=performance.now();const vt=viewTeam();
   const e=pickEnt(p.x,p.y,x=>!x.isN);const us=ownUnitsSel();
   if(e&&e.isB&&e.team===0&&!e.built&&us.some(u=>u.T.worker)){order(p.x,p.y);return;}
   /* accoliti selezionati + tocco sul proprio Santuario oscuro = vanno a pregare (prima il tocco selezionava il Santuario) */
@@ -3605,7 +3610,8 @@ function renderRes(){const el=$('#resbar');const one=t=>{const R=RACES[t.race];c
 let cmdSpecs=[];
 function btn(o){return o;}
 function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams[0];if(picks.mode==='watch')return[btn({glyph:LT('ESE'),label:LT('Eserciti'),on:selectArmy,title:LT('Seleziona tutte le unità da combattimento')})];
-  if(placing)return[btn({glyph:'X',label:LT('Annulla'),on:cancelPlacing,title:LT('Annulla la costruzione (Esc o tasto destro)')})];
+  if(placing){const ca=btn({glyph:'X',label:LT('Annulla'),on:cancelPlacing,title:LT('Annulla la costruzione (Esc o tasto destro)')});if(!placing.touch)return[ca];
+    const why=placeWhy();return[btn({glyph:'✓',label:LT('Conferma'),on:confirmPlace,dis:!!why,why,title:LT('Costruisci qui')}),ca];}
   const base=[btn({glyph:LT('ESE'),label:LT('Esercito'),on:selectArmy,title:LT('Seleziona tutto l’esercito (Ctrl+A)')}),btn({glyph:LT('LAV'),label:LT('Inattivi'),on:selectIdleWorker,title:LT('Seleziona un lavoratore inattivo')}),btn({glyph:'BASE',label:'Base',on:focusBase,title:LT('Vai alla base principale')})];
   if(coarse)base.push(btn({glyph:'[ ]',label:LT('Riquadro'),pressed:boxMode,on:()=>{boxMode=!boxMode;setBoxUI();},title:LT('Trascina per selezionare più unità')}));
   if(!sel.length||sel[0].team!==0||sel[0].isN)return base;
@@ -3617,7 +3623,7 @@ function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams
     return out;}
   const us=sel.filter(u=>!u.isB);const allW=us.every(u=>u.T.worker);const out=[];
   if(allW)RACE_B[tm.race].filter(k=>BT[k].role!=='hq').forEach(k=>{const T=BT[k];const why=buildBlock(tm,k);out.push(btn({glyph:T.name.split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase(),label:T.name,cost:T.cost,dis:!!why,lock:T.lvl>tm.level?LT('Liv.')+' '+T.lvl:null,why,bld:1,
-    on:()=>{if(buildBlock(tm,k)){toast(buildBlock(tm,k));return;}placing={key:k,workers:us};selDirty=true;toast(coarse?LTf('Tocca il terreno per posizionare {0}',T.name):LTf('Clic sul terreno per posizionare {0} · tasto destro per annullare',T.name));},title:T.name+' · '+costText(T.cost,tm.race)+' · '+T.info}));});
+    on:()=>{if(buildBlock(tm,k)){toast(buildBlock(tm,k));return;}placing={key:k,workers:us,touch:coarse||lastPtr!=='mouse'};selDirty=true;toast(placing.touch?LTf('Tocca una zona verde per {0}, poi premi Conferma',T.name):LTf('Clic sul terreno per posizionare {0} · tasto destro per annullare',T.name));},title:T.name+' · '+costText(T.cost,tm.race)+' · '+T.info}));});
   const pr=us.filter(u=>u.T.pray),allP=pr.length===us.length;
   if(pr.length)out.push(btn({glyph:LT('PREGA'),label:LT('Prega'),on:()=>{let ok=0;pr.forEach(u=>{if(u.order&&u.order.kind==='pray'||sendPray(u))ok++;});if(ok<pr.length)toast(prayShrines(0).length?LTf('Al massimo {0} accoliti per Santuario',PRAY_MAX):LT('Serve un Santuario oscuro'));},title:LT('Torna a pregare davanti al Santuario oscuro')}));
   out.push(btn({glyph:'STOP',label:LT('Fermi'),on:()=>us.forEach(u=>{u.order=null;u.target=null;}),title:LT('Interrompi gli ordini')}));
@@ -3630,7 +3636,7 @@ function renderCmd(){const el=$('#cmd');cmdSpecs=buildSpecs();const race=teams[0
 $('#cmd').addEventListener('click',e=>{const b=e.target.closest('.cb');if(!b)return;const s=cmdSpecs[+b.dataset.i];if(!s)return;if(s.dis&&!s.bld){toast(s.why||LT('Non disponibile'));return;}s.on();renderCmd();});
 function bar(fr,col){return '<div class="bar"><i style="width:'+Math.round(Math.max(0,Math.min(1,fr))*100)+'%;background:'+col+'"></i></div>';}
 function renderSel(){const el=$('#sel');const sel=[...selection].filter(e=>!e.dead);let h;
-  if(placing){const T=BT[placing.key];h='<div class="ttl">'+esc(T.name)+'</div><div class="hint">'+esc(T.info)+'</div><div class="hint">'+(coarse?LT('Tocca il terreno per posizionarlo.'):LT('Clic sul terreno per posizionarlo, tasto destro per annullare.'))+'</div>';}
+  if(placing){const T=BT[placing.key];h='<div class="ttl">'+esc(T.name)+'</div><div class="hint">'+esc(T.info)+'</div><div class="hint">'+(placing.touch?LT('Tocca una zona verde per scegliere il posto, poi premi Conferma.'):LT('Clic sul terreno per posizionarlo, tasto destro per annullare.'))+'</div>';}
   else if(!sel.length){const hintTxt=LT(picks.mode==='watch'?'Stai osservando due IA. Usa la minimappa e la velocità per seguire la partita; tocca un’unità o un edificio per vederne i dati.':coarse?'Tocca un lavoratore per costruire, un edificio per produrre unità. Con le unità selezionate tocca un nemico per attaccare o il terreno per avanzare.':'Seleziona un lavoratore per costruire, un edificio per produrre. Con le unità selezionate clic su un nemico per attaccare, sul terreno per avanzare.');h='';if(!window.__hintShown){window.__hintShown=1;toast(hintTxt);}}
   else if(sel[0].isB){const b=sel[0],T=b.T,mine=b.team===0||picks.mode==='watch';
     h='<div class="ttl">'+esc(T.name)+(b.team!==0&&picks.mode!=='watch'?' <span class="foe">'+LT('nemico')+'</span>':'')+'</div>'+bar(b.built?b.hp/b.maxhp:b.prog,b.built?'#8fd16a':'#6fb3e6')+'<div class="sub">'+(b.built?fmt(b.hp)+' / '+fmt(b.maxhp)+' '+LT('vita'):LTf('In costruzione · {0}%',Math.round(b.prog*100)))+'</div>';
@@ -3658,7 +3664,7 @@ $('#pickMe').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!
 $('#pickFoe').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;picks.foe=b.dataset.race;renderPickers();});
 /* lingua (lang.js): scelta nella schermata iniziale, cambia subito i testi e viene ricordata */
 function renderLang(){const e=$('#pickLang');if(!e)return;e.innerHTML=[['it','Italiano'],['en','English']].map(([k,n])=>'<button type="button" class="chip lang" style="--rc:var(--brass)" data-lang="'+k+'" lang="'+k+'" aria-pressed="'+(LANG===k)+'"><span class="rn">'+n+'</span></button>').join('');}
-$('#pickLang').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||b.dataset.lang===LANG)return;setLang(b.dataset.lang,1);renderLang();renderPickers();renderQuality();});
+$('#pickLang').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||b.dataset.lang===LANG)return;setLang(b.dataset.lang,1);renderLang();renderPickers();renderQuality();renderView();});
 setLang(LANG);renderLang();
 renderPickers();
 $('#bStart').addEventListener('click',startGame);$('#bAgain').addEventListener('click',startGame);
@@ -3687,7 +3693,7 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   lavaT+=rdt;if(lavaT>.12){lavaT=0;paintLava(clock);lavaTex.needsUpdate=true;}
   if(!gameOn&&!reduceMotion){cam.tx=Math.sin(clock*.06)*20;cam.tz=Math.sin(clock*.045)*14;cam.dist=50;}
   {const zb=cam.dist<26?1.15:1;if(zb!==zoomBoost){zoomBoost=zb;resize();}}
-  placeCamera();placeSun();
+  placeCamera();placeSun();zonesTick(rdt);
   const rb=ownBldSel();if(rb&&rb.rally){rallyFlag.visible=true;rallyFlag.position.set(rb.rally.x,0,rb.rally.z);}else rallyFlag.visible=false;
   uiT-=rdt;if(gameOn&&(selDirty||uiT<=0)){renderRes();renderSel();renderCmd();selDirty=false;uiT=.3;}
   miniT-=rdt;if(gameOn&&miniT<=0){drawMini();miniT=.2;}
@@ -3755,6 +3761,60 @@ addEventListener('resize',resize);applyQuality();placeCamera();placeSun();reques
   addEventListener('appinstalled',()=>{done=true;deferred=null;show();$('#inst').hidden=true;toast(LT('Il gioco e\' installato: lo trovi tra le tue app!'));});
   window.__pwa={steps,howTo,isApp,get deferred(){return deferred;}};
 })();
+
+/* ================= EDIFICI AL TOCCO E VISUALE (versione 67, ramo `tocco`, richiesta dell'utente il 28 ottobre) =================
+   Solo interfaccia del giocatore: le regole non cambiano (placeOK e placeBuilding sono quelli di prima).
+   1) Mentre si sceglie dove costruire, il terreno visibile si colora: verde = qui si puo' mettere il centro dell'edificio,
+      rosso = no (troppo vicino a edifici o giacimenti, terreno non piano, fuori mappa, zona mai esplorata).
+   2) Su tablet e telefono il tocco NON costruisce subito: sposta l'anteprima (se si tocca un punto rosso vicino a uno verde,
+      l'anteprima va sul verde piu' vicino) e compare il pulsante "Conferma". Col mouse il clic costruisce come prima.
+   3) Visuale Vicina / Normale / Lontana: distanza della telecamera a inizio partita e quando la si sceglie nel menu
+      (lo zoom con le dita o la rotella resta libero). */
+let lastPtr='mouse';addEventListener('pointerdown',e=>{lastPtr=e.pointerType||'mouse';},true);
+/* due gruppi di quadretti (un disegno ciascuno, solo mentre si sceglie il posto): verdi ben visibili, rossi tenui
+   (richiesta dell'utente: i rossi meno evidenti, cosi' risaltano i verdi) */
+const ZONE={g:null,r:null,max:48*34,cx:1e9,cz:1e9,d:0,key:null,t:0,nG:0,nR:0};
+function zoneMk(col,op,size){const g=new THREE.PlaneGeometry(size,size);g.rotateX(-Math.PI/2);
+  const m=new THREE.InstancedMesh(g,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,depthWrite:false}),ZONE.max);
+  m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);m.frustumCulled=false;m.renderOrder=2;m.count=0;m.visible=false;scene.add(m);return m;}
+function zoneMeshes(){if(!ZONE.g){ZONE.g=zoneMk(0x6fe05a,.42,.92);ZONE.r=zoneMk(0xb8483a,.13,.8);}return ZONE;}
+/* il punto (x,z) va bene per il centro dell'edificio? (stesse regole del gioco + per il giocatore: zona gia' esplorata) */
+function zoneOK(key,x,z){if(!placeOK(key,x,z))return false;if(FOG.on&&!fogExpXZ(x,z))return false;return true;}
+function zonesHide(){if(ZONE.g){ZONE.g.visible=ZONE.r.visible=false;ZONE.g.count=ZONE.r.count=0;}ZONE.key=null;}
+/* ricalcolo: quando la telecamera si sposta o cambia lo zoom, e comunque ogni 0,6 s (edifici nuovi, risorse) */
+function zonesTick(dt){if(!placing||!gameOn||ended){if(ZONE.key)zonesHide();return;}const Z=zoneMeshes();ZONE.t-=dt;
+  if(ZONE.key===placing.key&&ZONE.t>0&&Math.hypot(cam.tx-ZONE.cx,cam.tz-ZONE.cz)<1.5&&Math.abs(cam.dist-ZONE.d)<3)return;
+  ZONE.key=placing.key;ZONE.t=.6;ZONE.cx=cam.tx;ZONE.cz=cam.tz;ZONE.d=cam.dist;
+  const hx=Math.min(24,Math.ceil(cam.dist*.62)),hz=Math.min(17,Math.ceil(cam.dist*.42)),cx=Math.round(cam.tx),cz=Math.round(cam.tz-cam.dist*.08);
+  const M=new THREE.Matrix4();let nG=0,nR=0;
+  for(let j=-hz;j<=hz;j++)for(let i=-hx;i<=hx;i++){const x=cx+i,z=cz+j;if(Math.abs(x)>MAP.X-.5||Math.abs(z)>MAP.Z-.5)continue;
+    M.makeTranslation(x,gy(x,z)+.09,z);if(zoneOK(placing.key,x,z)){if(nG<ZONE.max)Z.g.setMatrixAt(nG++,M);}else if(nR<ZONE.max)Z.r.setMatrixAt(nR++,M);}
+  ZONE.nG=Z.g.count=nG;ZONE.nR=Z.r.count=nR;Z.g.instanceMatrix.needsUpdate=Z.r.instanceMatrix.needsUpdate=true;Z.g.visible=nG>0;Z.r.visible=nR>0;}
+/* tocco: il posto valido piu' vicino entro 1,6 caselle (prima il punto toccato) */
+function zoneSnap(key,x,z){if(zoneOK(key,x,z))return {x,z,ok:true};let best=null,bd=Infinity;
+  for(let dz=-1.6;dz<=1.6;dz+=.4)for(let dx=-1.6;dx<=1.6;dx+=.4){const d=dx*dx+dz*dz;if(d>2.56||d>=bd)continue;if(zoneOK(key,x+dx,z+dz)){bd=d;best={x:x+dx,z:z+dz,ok:true};}}
+  return best||{x,z,ok:false};}
+/* anteprima in un punto del mondo (verde/rossa) */
+function ghostAt(x,z){const r=BT[placing.key].r;ghost.visible=true;ghost.position.set(x,gy(x,z),z);ghost.scale.set(r,1,r);
+  const ok=zoneOK(placing.key,x,z)&&!buildBlock(teams[0],placing.key);ghostDisc.material.color.set(ok?0x8fd16a:0xe0503e);ghostRing.material.color.set(ok?0x8fd16a:0xe0503e);return ok;}
+function touchPlace(cx,cy){const p=groundAt(cx,cy);if(!p||!placing)return;const s=zoneSnap(placing.key,p.x,p.z);placing.at={x:s.x,z:s.z};ghostAt(s.x,s.z);selDirty=true;
+  if(!s.ok)toast(FOG.on&&!fogExpXZ(p.x,p.z)?LT('Zona non ancora esplorata'):LT('Posizione non valida: troppo vicino a edifici o giacimenti'));}
+function confirmPlace(){if(!placing||!placing.at)return;const a=placing.at;const ws=placing.workers.filter(w=>!w.dead);if(!ws.length){cancelPlacing();return;}
+  if(!zoneOK(placing.key,a.x,a.z)){toast(LT('Posizione non valida: troppo vicino a edifici o giacimenti'));return;}
+  const b=placeBuilding(0,placing.key,a.x,a.z,ws);if(!b){toast(buildBlock(teams[0],placing.key)||LT('Posizione non valida: troppo vicino a edifici o giacimenti'));return;}
+  marker(a.x,a.z,0x6fb3e6);cancelPlacing();}
+function placeWhy(){if(!placing)return null;if(!placing.at)return LT('Tocca prima una zona verde');return buildBlock(teams[0],placing.key)||(zoneOK(placing.key,placing.at.x,placing.at.z)?null:LT('Posizione non valida: troppo vicino a edifici o giacimenti'));}
+
+/* ---------- visuale ---------- */
+const VIEWD={vicina:{d:30,t:32},normale:{d:40,t:44},lontana:{d:56,t:60}};
+let viewPref='normale';try{const v=localStorage.getItem('ss_view');if(VIEWD[v])viewPref=v;}catch(e){}
+function viewDist(){const V=VIEWD[viewPref]||VIEWD.normale;return coarse?V.t:V.d;}
+function setView(v,apply){if(!VIEWD[v])return;viewPref=v;try{localStorage.setItem('ss_view',v);}catch(e){}if(apply&&gameOn&&picks.mode!=='watch')cam.dist=viewDist();renderView();}
+function renderView(){const o=[['vicina',LT('Vicina'),LT('unità più grandi')],['normale',LT('Normale'),LT('equilibrata')],['lontana',LT('Lontana'),LT('si vede più campo')]];
+  const h=o.map(([k,n,i])=>'<button type="button" class="chip" style="--rc:var(--brass)" data-v="'+k+'" aria-pressed="'+(viewPref===k)+'"><span class="rn">'+n+'</span><span class="ra">'+i+'</span></button>').join('');
+  document.querySelectorAll('.pickV').forEach(e=>e.innerHTML=h);}
+document.querySelectorAll('.pickV').forEach(e=>e.addEventListener('click',ev=>{const b=ev.target.closest('.chip');if(!b)return;setView(b.dataset.v,true);}));
+renderView();
 
 window.__scene=scene;window.__T={ev(s){return eval(s);},get units(){return units},get blds(){return blds},get nodes(){return nodes},get teams(){return teams},picks,startGame,step,get now(){return now},get ended(){return ended},dbgMini(){try{drawMini();return 'ok '+!!miniBase+' '+gameOn+' '+miniT;}catch(e){return String(e.stack);}},clearFx(){fx.forEach(f=>{scene.remove(f.sp);f.sp.material.dispose();});fx=[];},spawn(k,t,x,z){return spawnUnit(k,t,x,z);},get blockers(){return BLOCKERS;},setSpeed(v){speed=v;},foot(){const out=[];for(const k in BT){const T=BT[k];try{const m=BUILD[T.race][T.model](0);const bx=new THREE.Box3();m.G.traverse(o=>{if(o.isMesh&&!o.isSprite){const b=new THREE.Box3().setFromObject(o);if(isFinite(b.min.x))bx.union(b);}});out.push([k,T.r,+(Math.max(-bx.min.x,bx.max.x,-bx.min.z,bx.max.z)).toFixed(2),+((bx.max.x-bx.min.x)/2).toFixed(2),+((bx.max.z-bx.min.z)/2).toFixed(2)]);}catch(e){out.push([k,String(e)]);}}return out;},placeOK(k,x,z){return placeOK(k,x,z);},L2W(t,x,z){return L2W(t,x,z);},blockedAt(x,z,r){return blocked(x,z,r);},get MF(){return MF;},get MG(){return MG;},newMap(s){newMap(s);},bench(n,q){if(q)setQuality(q);const px=new Uint8Array(4),gl=renderer.getContext();render();gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);const t=performance.now();for(let i=0;i<n;i++){render();gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);}return [(performance.now()-t)/n,W,H,PERF.calls];},camTo(x,z,d){cam.tx=x;cam.tz=z;cam.dist=d||cam.dist;},get info(){renderer.info.autoReset=false;renderer.info.reset();renderer.setRenderTarget(null);renderer.render(scene,camera);renderer.info.autoReset=true;return {calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geo:renderer.info.memory.geometries,tex:renderer.info.memory.textures,prog:renderer.info.programs.length,objs:scene.children.length}}};
 })();
