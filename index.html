@@ -2329,17 +2329,23 @@ function addLandmarks(G){const R=rng(303+MG.seed);const smk=buildMap2(G);
   for(let k=0;k<55;k++){const x=(R()<.5?-1:1)*(35+R()*20),z=-39+R()*78;if(!GREEN[region(x,z)]||riverD(x,z)<3||nearResource(x,z,3)||blocked(x,z,3.5)||!lowFlat(x,z,1.8))continue;logStump(G,x,z,R);}
   /* (tolti i 'cristalli di lava': punte arancioni piatte, sembravano macchie senza senso accanto ai disegni PixelLab) */
   /* cartelli di legno PixelLab (14 varianti): uno vicino a ogni ponte e guado (dal lato giusto, fuori dal passaggio) e qualcuno nella fascia centrale */
-  if(typeof Image!=='undefined'&&typeof EXTDECO!=='undefined'){const NS=EXTDECO.sign.r.length;const SG=[];const far=(x,z)=>SG.every(p=>Math.hypot(p[0]-x,p[1]-z)>7);const sign=(x,z)=>{SG.push([x,z]);const c=decoCanvas('sign',Math.floor(R()*NS)),w=1.15+R()*.3;decoSprite(G,c,x,z,w,w*c.height/c.width);};
+  /* 28 ottobre sera: OSTACOLI VERI. Cartelli, rocce vulcaniche, resti di battaglia, ruote e ceppi ora bloccano il passaggio (prima
+     le unita' ci passavano sopra). Le posizioni si calcolano anche nel simulatore (stesso generatore, stessi ostacoli); si disegna solo nel browser. */
+  const VIS=typeof Image!=='undefined'&&typeof EXTDECO!=='undefined',OB=(x,z,r)=>BLOCKERS.push({x,z,r,deco:1});
+  const dput=(set,i,x,z,w)=>{if(VIS){const c=decoCanvas(set,i);decoSprite(G,c,x,z,w,w*c.height/c.width);}};
+  if(typeof EXTDECO!=='undefined'){const NS=EXTDECO.sign.r.length;const SG=[];const far=(x,z)=>SG.every(p=>Math.hypot(p[0]-x,p[1]-z)>7);const sign=(x,z)=>{SG.push([x,z]);const i=Math.floor(R()*NS),w=1.15+R()*.3;dput('sign',i,x,z,w);OB(x,z,.3);};
     for(const cx of CROSS.bridges.concat(CROSS.fords)){if(R()<.25)continue;const sd=R()<.5?-1:1,sx=R()<.5?-1:1;const x=cx+sx*(3.3+R()*.8),z=riverZ(x)+sd*(3.6+R()*1.2);if(Math.abs(x)<56&&Math.abs(z)<40&&flatAt(x,z,.6)&&!blocked(x,z,.7)&&!nearResource(x,z,1.8)&&!inBase(x,z)&&far(x,z))sign(x,z);}
     for(let k=0,n=0;k<70&&n<6;k++){const x=-50+R()*100,z=-34+R()*68;if(region(x,z)!=='mid'||!flatAt(x,z,.7)||riverD(x,z)<3.5||blocked(x,z,1)||nearResource(x,z,2.4)||inBase(x,z)||!far(x,z))continue;n++;sign(x,z);}}
-  /* rocce vulcaniche PixelLab (15 varianti) a gruppetti nelle zone calde: decorazione, non bloccano; posizioni dal seme della mappa */
-  if(typeof Image!=='undefined'&&typeof EXTDECO!=='undefined')for(let k=0,n=0;k<170&&n<46;k++){const x=(R()<.5?-1:1)*(32+R()*23),z=-40+R()*80;
+  /* rocce vulcaniche PixelLab (15 varianti) a gruppetti nelle zone calde (bloccano); posizioni dal seme della mappa */
+  if(typeof EXTDECO!=='undefined')for(let k=0,n=0;k<170&&n<46;k++){const x=(R()<.5?-1:1)*(32+R()*23),z=-40+R()*80;
     if(!flatAt(x,z,1)||!HOT[region(x,z)]||riverD(x,z)<2.6||nearResource(x,z,2.2)||blocked(x,z,.8)||inBase(x,z))continue;n++;
     const m=1+Math.floor(R()*3);for(let i=0;i<m;i++){const a=R()*6.3,d=i?1+R()*.9:0,px=x+Math.cos(a)*d,pz=z+Math.sin(a)*d*.8;if(i&&(blocked(px,pz,.6)||riverD(px,pz)<2.4||!flatAt(px,pz,.4)||gy(px,pz)!==gy(x,z)))continue;
-      const c=decoCanvas('rock',Math.floor(R()*EXTDECO.rock.r.length)),w=(i?.9:1.25)+R()*.5;decoSprite(G,c,px,pz,w,w*c.height/c.width);}}
+      const ri=Math.floor(R()*EXTDECO.rock.r.length),w=(i?.9:1.25)+R()*.5;dput('rock',ri,px,pz,w);OB(px,pz,.35*w);}}
   /* resti di battaglia PixelLab dell'utente nella fascia centrale (28 ottobre): sacchi di sabbia con filo spinato, tubi spezzati, rocce grigie.
-     Solo decorazione (non bloccano), lontano da fiume, giacimenti, basi e passaggi; posizioni dal seme della mappa */
-  if(typeof Image!=='undefined'&&typeof EXTDECO!=='undefined'&&EXTDECO.sand){const PK=(set)=>decoCanvas(set,Math.floor(R()*EXTDECO[set].r.length));const put=(set,x,z,w)=>{const c=PK(set);decoSprite(G,c,x,z,w,w*c.height/c.width);};
+     Bloccano il passaggio (raggio OBR), lontano da fiume, giacimenti, basi e passaggi; posizioni dal seme della mappa */
+  /* raggio dell'ostacolo per tipo, in proporzione alla larghezza del disegno (i ciuffi d'erba non bloccano) */
+  const OBR={sand:.4,wire:.36,pipe:.36,grock:.38,wheel:.36,stump:.36};
+  if(typeof EXTDECO!=='undefined'&&EXTDECO.sand){const put=(set,x,z,w)=>{const i=Math.floor(R()*EXTDECO[set].r.length);dput(set,i,x,z,w);if(OBR[set])OB(x,z,OBR[set]*w);};
     const FG=[];const far=(x,z)=>FG.every(p=>Math.hypot(p[0]-x,p[1]-z)>6);
     for(let k=0,n=0;k<160&&n<16;k++){const x=-52+R()*104,z=-36+R()*72;
       if(region(x,z)!=='mid'||!flatAt(x,z,1.2)||riverD(x,z)<3.2||blocked(x,z,1.4)||nearResource(x,z,3)||inBase(x,z)||!far(x,z))continue;FG.push([x,z]);n++;
@@ -2351,7 +2357,7 @@ function addLandmarks(G){const R=rng(303+MG.seed);const smk=buildMap2(G);
     if(EXTDECO.crater){const cm={};
       for(let k=0,n=0;k<140&&n<10;k++){const x=-52+R()*104,z=-36+R()*72;
         if(region(x,z)!=='mid'||!flatAt(x,z,1.4)||riverD(x,z)<3.2||blocked(x,z,1.2)||nearResource(x,z,3)||inBase(x,z)||!far(x,z))continue;FG.push([x,z]);n++;
-        const i=Math.floor(R()*EXTDECO.crater.r.length),c=decoCanvas('crater',i),w=1.7+R()*.6;
+        const i=Math.floor(R()*EXTDECO.crater.r.length),w=1.7+R()*.6;if(!VIS)continue;const c=decoCanvas('crater',i);
         const mat=cm[i]||(cm[i]=new THREE.MeshLambertMaterial({map:nearest(new THREE.CanvasTexture(c)),alphaTest:.5,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
         const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*c.height/c.width/.72),mat);m.rotation.x=-Math.PI/2;m.position.set(x,topAt(x,z)+.03,z);m.receiveShadow=true;G.add(m);}}
     if(EXTDECO.wheel)for(let k=0,n=0;k<120&&n<7;k++){const x=-52+R()*104,z=-36+R()*72;
@@ -2387,7 +2393,7 @@ function buildPlaza(scene,team,race){const G=new THREE.Group();scene.add(G);cons
   const hq={durmagh:'fornace',thalren:'albero',vaelrith:'sala',scrappers:'discarica'}[race];const hr=(BT[hq]&&(BT[hq].cr||BT[hq].r))||4;
   const sl=[];for(const k in SLOTS)SLOTS[k].forEach(([sx,sz])=>sl.push(L2W(team,sx,sz)));
   for(let k=0;k<9;k++){const a=(c.z>0?-Math.PI/2:Math.PI/2)+.55+k/9*(Math.PI*2-1.1);const r=hr+.95+(k%2)*.4;const px=Math.cos(a)*r,pz=Math.sin(a)*r;
-    if(sl.some(s=>Math.hypot(c.x+px-s.x,c.z+pz-s.z)<3.6))continue;PLAZA[race](G,px,pz,k);PLAZAOBS.push({x:c.x+px,z:c.z+pz,r:.42});}
+    if(sl.some(s=>Math.hypot(c.x+px-s.x,c.z+pz-s.z)<3.6))continue;PLAZA[race](G,px,pz,k);PLAZAOBS.push({x:c.x+px,z:c.z+pz,r:k%5===4?.85:.42});}
   bakeGroup(G);return G;}
 
 /* ================= ATMOSFERA: nuvole, dirigibili, uccelli, terre lontane ================= */
@@ -2915,6 +2921,13 @@ function sheet(kind,team){const key=kind+team;if(sheetCache[key])return sheetCac
 function sheetBack(kind,team){const key='b|'+kind+team;if(sheetCache[key])return sheetCache[key];const XI=EXTBIMG[kind];if(!(XI&&XI.complete&&XI.naturalWidth))return null;const P=spx(TYPES[kind]);const c=mkCanvas(P*FR,P),g=c.getContext('2d');extFrames(g,XI,P,ramp(TEAMCOL[team]));return sheetCache[key]=c;}
 const iconCache={};
 function icon(kind,team){const key=kind+(team||0);if(iconCache[key])return iconCache[key];const P=spx(TYPES[kind]);const c=mkCanvas(P,P);c.getContext('2d').drawImage(sheet(kind,team||0),0,0,P,P,0,0,P,P);return iconCache[key]=c.toDataURL();}
+/* APPOGGIO A TERRA: righe vuote sotto il disegno (il piu' basso fra gli 8 fotogrammi), come frazione della tela.
+   Lo sprite si aggancia li', cosi' cingoli e ruote toccano il terreno (prima: centro fisso .02 -> il Mortaio volava). */
+function sheetFoot(c,P){if(!c||c.__ft!==undefined)return c?c.__ft:.02;let ft=.02;
+  try{const W=c.width,d=c.getContext('2d').getImageData(0,0,W,c.height).data;let m=P;
+    for(let f=0;f<FR;f++)for(let y=P-1;y>=0;y--){let hit=false;for(let x=f*P;x<f*P+P;x++)if(d[(y*W+x)*4+3]>128){hit=true;break;}if(hit){m=Math.min(m,P-1-y);break;}}
+    if(m<P)ft=Math.max(.02,m/P);}catch(e){}
+  return c.__ft=ft;}
 function uScale(T){return (T.big?3.9:T.worker?2.35:2.6)*(T.sz||1);}
 function uRad(T){return T.big?1.25:T.worker?.42:.48;}
 
@@ -2952,13 +2965,18 @@ function nearestFree(k){const ci=k%GW,cj=(k/GW)|0,h0=CELLH[k]>=99?-1:CELLH[k];le
 const HP={a:[],f:[],push(i,f){const a=this.a,F=this.f;a.push(i);F.push(f);let c=a.length-1;while(c>0){const p=(c-1)>>1;if(F[p]<=F[c])break;[a[p],a[c]]=[a[c],a[p]];[F[p],F[c]]=[F[c],F[p]];c=p;}},
   pop(){const a=this.a,F=this.f;const top=a[0];const li=a.pop(),lf=F.pop();if(a.length){a[0]=li;F[0]=lf;let c=0;for(;;){const l=c*2+1,r=l+1;let m=c;if(l<a.length&&F[l]<F[m])m=l;if(r<a.length&&F[r]<F[m])m=r;if(m===c)break;[a[m],a[c]]=[a[c],a[m]];[F[m],F[c]]=[F[c],F[m]];c=m;}}return top;},clear(){this.a.length=0;this.f.length=0;}};
 const NB=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-function findPath(sx,sz,tx,tz){let s=gidx(sx,sz),t=gidx(tx,tz);if(s<0||t<0)return null;if(grid[t])t=nearestFree(t);if(grid[s])s=nearestFree(s);if(s<0||t<0)return null;
+function findPath(sx,sz,tx,tz,rt){let s=gidx(sx,sz),t=gidx(tx,tz);if(s<0||t<0)return null;if(grid[t])t=nearestFree(t);if(grid[s])s=nearestFree(s);if(s<0||t<0)return null;
   searchId++;HP.clear();const tI=t%GW,tJ=(t/GW)|0;const H=k=>{const di=Math.abs(k%GW-tI),dj=Math.abs(((k/GW)|0)-tJ);return Math.max(di,dj)+.414*Math.min(di,dj);};
   seen[s]=searchId;gScore[s]=0;came[s]=-1;HP.push(s,H(s));let exp=0;
   while(HP.a.length){const c=HP.pop();if(closedA[c]===searchId)continue;closedA[c]=searchId;if(c===t)break;if(++exp>30000)return null;const ci=c%GW,cj=(c/GW)|0;
     for(const [di,dj] of NB){const ni=ci+di,nj=cj+dj;if(ni<0||nj<0||ni>=GW||nj>=GH)continue;const n=nj*GW+ni;if(grid[n])continue;if(di&&dj&&(grid[cj*GW+ni]||grid[nj*GW+ci]))continue;
       const ng=gScore[c]+(di&&dj?1.414:1);if(seen[n]!==searchId||ng<gScore[n]){seen[n]=searchId;gScore[n]=ng;came[n]=c;HP.push(n,ng+H(n));}}}
-  if(closedA[t]!==searchId)return null;
+  if(closedA[t]!==searchId){
+    /* USCITA DAI BUCHI (28 ottobre): partenza in una sacchetta piccola senza strada (riva del fiume, tra edifici):
+       si riparte dalla casella libera piu' vicina fuori dalla sacchetta, entro 5 caselle */
+    if(rt||exp>400)return null;const si=s%GW,sj=(s/GW)|0;let best=-1,bd=99;
+    for(let dj=-5;dj<=5;dj++)for(let di=-5;di<=5;di++){const i=si+di,j=sj+dj;if(i<0||j<0||i>=GW||j>=GH)continue;const n=j*GW+i;if(grid[n]||seen[n]===searchId)continue;const d=Math.hypot(di,dj);if(d<bd){bd=d;best=n;}}
+    if(best<0)return null;const ex={x:GOX+best%GW+.5,z:GOZ+((best/GW)|0)+.5};const rest=findPath(ex.x,ex.z,tx,tz,1);return rest?[ex].concat(rest):null;}
   const pts=[];for(let k=t;k!==-1;k=came[k])pts.push(k);pts.reverse();
   const w=pts.map(k=>({x:GOX+k%GW+.5,z:GOZ+((k/GW)|0)+.5}));if(!blockedAt(tx,tz))w[w.length-1]={x:tx,z:tz};
   const out=[];let cx=sx,cz=sz,i=0;while(i<w.length){let j=Math.min(w.length-1,i+40);while(j>i&&!lineClear(cx,cz,w[j].x,w[j].z))j--;out.push(w[j]);cx=w[j].x;cz=w[j].z;i=j+1;}
@@ -2984,12 +3002,13 @@ function spawnUnit(key,team,x,z){const T=TYPES[key],tm=teams[team];
   const tex=nearest(new THREE.CanvasTexture(sheet(key,team)));tex.repeat.set(1/FR,1);
   let texB=null;{const sb=typeof EXTBIMG!=='undefined'&&EXTBIMG[key]?sheetBack(key,team):null;if(sb){texB=nearest(new THREE.CanvasTexture(sb));texB.repeat.set(1/FR,1);}}
   const mat=flatDepth(new THREE.SpriteMaterial({map:tex,alphaTest:T.stealth?.3:.5}));if(T.stealth){mat.transparent=true;}
-  const S=uScale(T);const sp=new THREE.Sprite(mat);sp.center.set(.5,.02);sp.scale.set(S,S,1);sp.position.set(x,gy(x,z),z);scene.add(sp);
+  const P0=spx(T),ftF=sheetFoot(sheet(key,team),P0),ftB=texB?sheetFoot(sheetBack(key,team),P0):ftF;
+  const S=uScale(T);const sp=new THREE.Sprite(mat);sp.center.set(.5,ftF);sp.scale.set(S,S,1);sp.position.set(x,gy(x,z),z);scene.add(sp);
   const sh=blob(scene,x,0,z,T.big?2.6:1.35);
   const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:TEAMCOL[team],transparent:true,opacity:.3,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,.05,z);const rs=T.big?1.7:T.worker?.85:1;ring.scale.set(rs,rs,1);ring.userData.s=rs;scene.add(ring);
   const [bg,fg]=barPair();
   const hp=T.hp*tm.mods.hp;
-  const u={id:uid++,key,T,team,pos:new THREE.Vector3(x,0,z),sp,mat,tex,texB,back:false,sh,ring,bg,fg,hp,maxhp:hp,order:null,target:null,cd:Math.random()*.4,anim:Math.random()*2,face:team===0?1:-1,
+  const u={id:uid++,key,T,team,pos:new THREE.Vector3(x,0,z),sp,mat,tex,texB,ftF,ftB,back:false,sh,ring,bg,fg,hp,maxhp:hp,order:null,target:null,cd:Math.random()*.4,anim:Math.random()*2,face:team===0?1:-1,
     atkFlash:0,hitFlash:0,engagedAt:-99,lastCombat:-99,revealUntil:-99,slowUntil:-99,slowF:0,curseUntil:-99,curseF:0,shredUntil:-99,shredA:0,acqT:Math.random()*.3,dead:false,deathT:0,carry:null,gatherT:0,path:null,repath:0,pgx:0,pgz:0,ur:uRad(T)};
   units.push(u);tm.stats.made++;return u;}
 function removeUnit(u){[u.sp,u.sh,u.ring,u.bg,u.fg].forEach(o=>{scene.remove(o);if(o.material&&o.material!==shadowMat)o.material.dispose();});if(u.cs){scene.remove(u.cs);u.cs.material.dispose();}u.tex.dispose();}
@@ -3212,10 +3231,27 @@ function nextStep(tm,myB){const hq=myB.find(b=>b.T.role==='hq');const lvlQ=hq&&h
     if(st.lvl){if(tm.level>=st.lvl)continue;if(lvlQ)return WAIT;if(!hq||!hq.built)return WAIT;if(st.lvl!==tm.level+1)continue;return{type:'l',hq,cost:LEVELS[st.lvl].cost};}
     if(st.r){if(tm.done[st.r]||researchQueued(tm.id,st.r))continue;const rbAny=myB.find(b=>b.T.research);if(!rbAny)continue;if(!rbAny.built)return WAIT;return{type:'r',r:st.r,rb:rbAny,cost:researchCost(tm.race)};}}
   return null;}
+/* NIENTE SACCHE (28 ottobre): un edificio dell'IA non deve chiudere una zona libera tra altri edifici o ostacoli
+   (prima i soldati nati li' dentro restavano incastrati per sempre e la partita non finiva). Controllo locale: nella
+   finestra attorno all'edificio, le caselle libere devono restare raggiungibili dal bordo della finestra
+   (8 direzioni, diagonale solo con i due lati liberi, come findPath). */
+const PKW=new Uint8Array(64*64),PKQ=new Int32Array(64*64);
+function enclosedCount(i0,j0,W,H,extra){let n=0;const B=PKW;
+  for(let j=0;j<H;j++)for(let i=0;i<W;i++){const gi=i0+i,gj=j0+j;const out=gi<0||gj<0||gi>=GW||gj>=GH;B[j*W+i]=(out||grid[gj*GW+gi]||(extra&&extra(gi,gj)))?1:0;}
+  let q=0;const seen=PKQ;let h=0;const mark=k=>{B[k]=2;seen[q++]=k;};
+  for(let i=0;i<W;i++){if(!B[i])mark(i);if(!B[(H-1)*W+i])mark((H-1)*W+i);}for(let j=0;j<H;j++){if(!B[j*W])mark(j*W);if(!B[j*W+W-1])mark(j*W+W-1);}
+  while(h<q){const k=seen[h++],ci=k%W,cj=(k/W)|0;for(const [di,dj] of NB){const ni=ci+di,nj=cj+dj;if(ni<0||nj<0||ni>=W||nj>=H)continue;const m=nj*W+ni;if(B[m])continue;
+    if(di&&dj&&(B[cj*W+ni]===1||B[nj*W+ci]===1))continue;mark(m);}}
+  for(let k=0;k<W*H;k++)if(B[k]===0)n++;return n;}
+function noPocket(key,x,z){const T=BT[key],rr=(T.cr||T.r)+.25,M=Math.ceil(rr)+7;
+  const i0=Math.floor(x-GOX)-M,j0=Math.floor(z-GOZ)-M,W=Math.min(64,2*M+1),H=W;
+  const before=enclosedCount(i0,j0,W,H,null);
+  const after=enclosedCount(i0,j0,W,H,(gi,gj)=>{const cx=GOX+gi+.5,cz=GOZ+gj+.5;return (cx-x)*(cx-x)+(cz-z)*(cz-z)<=rr*rr;});
+  return after<=before;}
 function aiSpot(t,role,n,hq,tgtN){const s=SLOTS[role]&&SLOTS[role][n];const key=roleKey(teams[t].race,role);
   const tries=[];if(s)tries.push(L2W(t,s[0],s[1]));for(let k=0;k<30;k++){const a=Math.random()*Math.PI*2,r=7+Math.random()*9;tries.push({x:hq.pos.x+Math.cos(a)*r,z:hq.pos.z+Math.sin(a)*r*.8});}
   if(role==='res'){const nd=findNode(t,hq.pos);if(nd){const far=tgtN||lowBaseNodes(t,hq);const tgt=far||nd;for(let k=0;k<20;k++){const a=Math.random()*Math.PI*2;tries.unshift({x:tgt.pos.x+Math.cos(a)*4.2,z:tgt.pos.z+Math.sin(a)*4.2});}}}
-  for(const p of tries)if(placeOK(key,p.x,p.z))return p;return null;}
+  for(const p of tries)if(placeOK(key,p.x,p.z)&&noPocket(key,p.x,p.z))return p;return null;}
 function lowBaseNodes(t,hq,force){const k=nodeKind(t);const near=nodes.filter(n=>n.kind===k&&!n.wreck&&Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z)<18);const sum=near.reduce((s,n)=>s+n.amt,0);
   if(sum>2500&&!force)return null;let best=null,bd=Infinity;for(const n of nodes){if(n.kind!==k||n.amt<200)continue;const d=Math.hypot(n.pos.x-hq.pos.x,n.pos.z-hq.pos.z);if(d<18)continue;if(nearestDrop(t,n.pos)&&Math.hypot(nearestDrop(t,n.pos).pos.x-n.pos.x,nearestDrop(t,n.pos).pos.z-n.pos.z)<8)continue;if(d<bd){bd=d;best=n;}}return best;}
 function weightedPick(opts,W){let tot=0;opts.forEach(k=>tot+=W[k]||1);let r=Math.random()*tot;for(const k of opts){r-=W[k]||1;if(r<=0)return k;}return opts[0];}
@@ -3405,7 +3441,7 @@ function placeBar(e,h,frac,col){const top=UP.clone().multiplyScalar(h);const w=e
 const hpCol=r=>r>.6?0x8fd16a:r>.3?0xe8b04a:0xe0503e;
 function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Math.max(0,1-u.deathT/1.1);u.sp.position.y=Y-u.deathT*.35;u.ring.visible=false;u.bg.visible=u.fg.visible=false;u.sh.visible=u.deathT<.6;if(u.cs)u.cs.visible=false;return;}
   u.anim+=dt;let f;if(u.atkFlash>0)f=7;else if(u.working)f=Math.floor(u.anim/.32)%2?6:7;else if(u.winding)f=6;else if(u.moving)f=2+Math.floor(u.anim/.11)%4;else f=Math.floor(u.anim/.6)%2;
-  u.atkFlash=Math.max(0,u.atkFlash-dt);u.hitFlash=Math.max(0,u.hitFlash-dt);const fl=u.face<0,setF=t=>{t.repeat.x=fl?-1/FR:1/FR;t.offset.x=fl?(f+1)/FR:f/FR;};setF(u.tex);if(u.texB){const w=(u.back&&!u.working&&!u.winding&&u.atkFlash<=0)?u.texB:u.tex;setF(w);if(u.mat.map!==w){u.mat.map=w;u.mat.needsUpdate=true;}}
+  u.atkFlash=Math.max(0,u.atkFlash-dt);u.hitFlash=Math.max(0,u.hitFlash-dt);const fl=u.face<0,setF=t=>{t.repeat.x=fl?-1/FR:1/FR;t.offset.x=fl?(f+1)/FR:f/FR;};setF(u.tex);if(u.texB){const w=(u.back&&!u.working&&!u.winding&&u.atkFlash<=0)?u.texB:u.tex;setF(w);if(u.mat.map!==w){u.mat.map=w;u.mat.needsUpdate=true;u.sp.center.y=w===u.texB?u.ftB:u.ftF;}}
   const S=uScale(u.T);u.sp.position.set(u.pos.x,Y,u.pos.z);u.sp.scale.set(S,S,1);u.sh.position.set(u.pos.x,Y+CONTACT_Y,u.pos.z);u.ring.position.set(u.pos.x,Y+.05,u.pos.z);
   const vt=viewTeam();const vis=fogShown(vt,u);u.sp.visible=u.sh.visible=vis;u.ring.visible=vis&&(selection.has(u)||u===hoverEnt);
   if(u.T.stealth){u.mat.opacity=now<u.revealUntil?1:(u.team===vt||vt<0?.55:.6);}
