@@ -75,7 +75,8 @@ button.primary:hover{background:#e8b65a}
 .spec{font-size:14px;color:#d9ccb8;margin-top:6px;line-height:1.3}
 .queue{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .qi{position:relative;width:44px;height:44px;padding:0;clip-path:none;border-color:rgba(217,164,65,.4);display:grid;place-items:center;overflow:hidden}
-.qi img{width:40px;height:40px;image-rendering:pixelated}.qi i{position:absolute;left:0;bottom:0;height:4px;background:var(--ok)}
+.qi img{width:40px;height:40px;image-rendering:pixelated}.qi .qt{position:absolute;left:0;right:0;top:1px;font:700 11px/14px system-ui,sans-serif;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;letter-spacing:0;text-transform:none}
+#timl{position:fixed;left:0;top:0;pointer-events:none;z-index:3}#timl .tm{position:absolute;transform:translate(-50%,-100%);padding:1px 7px;border-radius:9px;background:rgba(20,16,12,.78);border:1px solid rgba(111,179,230,.6);font:700 12px/16px system-ui,sans-serif;color:#cfe6f7;white-space:nowrap}.qi i{position:absolute;left:0;bottom:0;height:4px;background:var(--ok)}
 .gl{font-family:var(--f-display);font-size:15px;letter-spacing:.04em;line-height:1}
 #cmd{grid-column:3;justify-self:end;display:grid;grid-template-columns:repeat(4,64px);gap:6px;padding:10px}
 .cb{width:64px;height:70px;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1px;text-transform:none;letter-spacing:0;font-weight:500;clip-path:var(--chamfer-s);border-color:rgba(217,164,65,.45);overflow:hidden}
@@ -145,6 +146,7 @@ button.primary:hover{background:#e8b65a}
 <div id="app">
   <canvas id="game" aria-label="Campo di battaglia"></canvas>
   <div id="box" hidden></div>
+  <div id="timl"></div>
   <header id="top">
     <div class="brand"><div class="name">SMOKESTACK SYMPHONY</div><div class="sub" id="matchup">Strategia in tempo reale dieselpunk</div></div>
     <div id="resbar" class="plate" hidden></div>
@@ -3436,7 +3438,7 @@ const ghostRing=new THREE.Mesh(new THREE.RingGeometry(.92,1,40),new THREE.MeshBa
 ghost.add(ghostDisc);ghost.add(ghostRing);ghost.visible=false;scene.add(ghost);
 const rallyFlag=new THREE.Group();(function(){const p=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1.6,6),new THREE.MeshBasicMaterial({color:0x2a2520}));p.position.y=.8;rallyFlag.add(p);
   const f=new THREE.Mesh(new THREE.PlaneGeometry(.7,.45),new THREE.MeshBasicMaterial({color:0xe8b04a,side:THREE.DoubleSide}));f.position.set(.35,1.35,0);rallyFlag.add(f);})();rallyFlag.visible=false;scene.add(rallyFlag);
-function placeBar(e,h,frac,col){const top=UP.clone().multiplyScalar(h);const w=e.isB?Math.min(3.6,e.r*1.2):1.2;const bx=e.pos.x-w/2+top.x,by=top.y,bz=e.pos.z+top.z;
+function placeBar(e,h,frac,col){const top=UP.clone().multiplyScalar(h);const w=e.isB?Math.min(3.6,e.r*1.2):1.2;const bx=e.pos.x-w/2+top.x,by=gy(e.pos.x,e.pos.z)+top.y,bz=e.pos.z+top.z;
   e.bg.position.set(bx-.03,by,bz);e.bg.scale.set(w+.06,.17,1);e.fg.position.set(bx,by,bz);e.fg.scale.set(Math.max(.001,w*frac),.11,1);e.fg.material.color.set(col);}
 const hpCol=r=>r>.6?0x8fd16a:r>.3?0xe8b04a:0xe0503e;
 function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Math.max(0,1-u.deathT/1.1);u.sp.position.y=Y-u.deathT*.35;u.ring.visible=false;u.bg.visible=u.fg.visible=false;u.sh.visible=u.deathT<.6;if(u.cs)u.cs.visible=false;return;}
@@ -3536,9 +3538,10 @@ function groundAt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.se
   for(let k=0;k<3;k++){const h=gy(p.x,p.z);if(!h)break;const pl=new THREE.Plane(new THREE.Vector3(0,1,0),-h);const q=new THREE.Vector3();if(!ray.ray.intersectPlane(pl,q))break;if(Math.abs(q.x-p.x)+Math.abs(q.z-p.z)<.05){p.copy(q);break;}p.copy(q);}
   return p;}
 const pv=new THREE.Vector3();function proj(x,y,z){pv.set(x,y,z).project(camera);return{x:(pv.x+1)/2*innerWidth,y:(1-pv.y)/2*innerHeight};}
-function entRect(e){if(e.isB){const c=proj(e.pos.x,0,e.pos.z),l=proj(e.pos.x-e.r,0,e.pos.z),t=proj(e.pos.x,e.top*(e.built?1:.3),e.pos.z);const hw=Math.abs(c.x-l.x);return{x0:c.x-hw,x1:c.x+hw,y0:t.y,y1:c.y+hw*.4,cx:c.x,cy:(t.y+c.y)/2};}
-  if(e.isN){const c=proj(e.pos.x,.5,e.pos.z),l=proj(e.pos.x-1,.5,e.pos.z);const hw=Math.max(10,Math.abs(c.x-l.x));return{x0:c.x-hw,x1:c.x+hw,y0:c.y-hw,y1:c.y+hw*.6,cx:c.x,cy:c.y};}
-  const S=uScale(e.T)*.85;const b=proj(e.pos.x,0,e.pos.z),t=proj(e.pos.x+UP.x*S,UP.y*S,e.pos.z+UP.z*S);const h=Math.max(12,b.y-t.y);const hw=Math.max(14,h*.34);return{x0:b.x-hw,x1:b.x+hw,y0:t.y,y1:b.y+6,cx:b.x,cy:(t.y+b.y)/2};}
+/* 31 ottobre: la zona cliccabile parte dall'altezza del suolo (prima da 0: sugli altopiani era sotto il disegno) */
+function entRect(e){const Y=gy(e.pos.x,e.pos.z);if(e.isB){const c=proj(e.pos.x,Y,e.pos.z),l=proj(e.pos.x-e.r,Y,e.pos.z),t=proj(e.pos.x,Y+e.top*(e.built?1:.3),e.pos.z);const hw=Math.abs(c.x-l.x);return{x0:c.x-hw,x1:c.x+hw,y0:t.y,y1:c.y+hw*.4,cx:c.x,cy:(t.y+c.y)/2};}
+  if(e.isN){const c=proj(e.pos.x,Y+.5,e.pos.z),l=proj(e.pos.x-1,Y+.5,e.pos.z);const hw=Math.max(10,Math.abs(c.x-l.x));return{x0:c.x-hw,x1:c.x+hw,y0:c.y-hw,y1:c.y+hw*.6,cx:c.x,cy:c.y};}
+  const S=uScale(e.T)*.85;const b=proj(e.pos.x,Y,e.pos.z),t=proj(e.pos.x+UP.x*S,Y+UP.y*S,e.pos.z+UP.z*S);const h=Math.max(12,b.y-t.y);const hw=Math.max(14,h*.34);return{x0:b.x-hw,x1:b.x+hw,y0:t.y,y1:b.y+6,cx:b.x,cy:(t.y+b.y)/2};}
 function pickEnt(cx,cy,f){let best=null,bd=Infinity;const pad=coarse?14:5;const vt=viewTeam();
   const test=e=>{const r=entRect(e);if(cx>=r.x0-pad&&cx<=r.x1+pad&&cy>=r.y0-pad&&cy<=r.y1+pad){const d=Math.hypot(cx-r.cx,cy-r.cy)+(e.isB?30:e.isN?40:0);if(d<bd){bd=d;best=e;}}};
   for(const u of units){if(u.dead||!f(u))continue;if(vt>=0&&!fogShown(vt,u))continue;test(u);}
@@ -3549,7 +3552,7 @@ function pickEnt(cx,cy,f){let best=null,bd=Infinity;const pad=coarse?14:5;const 
 function setSel(list,add){if(!add)selection.clear();list.forEach(e=>selection.add(e));selDirty=true;}
 function ownUnitsSel(){return[...selection].filter(e=>!e.isB&&!e.dead&&e.team===0);}
 function ownBldSel(){const e=[...selection][0];return e&&e.isB&&!e.dead&&e.team===0?e:null;}
-function marker(x,z,col){const m=new THREE.Mesh(new THREE.RingGeometry(.3,.45,24),new THREE.MeshBasicMaterial({color:col,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(x,.07,z);scene.add(m);markers.push({m,t:0});}
+function marker(x,z,col){const m=new THREE.Mesh(new THREE.RingGeometry(.3,.45,24),new THREE.MeshBasicMaterial({color:col,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(x,gy(x,z)+.07,z);scene.add(m);markers.push({m,t:0});}
 function updateMarkers(dt){for(let i=markers.length-1;i>=0;i--){const k=markers[i];k.t+=dt;const s=1+k.t*3;k.m.scale.set(s,s,1);k.m.material.opacity=1-k.t/.6;if(k.t>.6){scene.remove(k.m);k.m.geometry.dispose();k.m.material.dispose();markers.splice(i,1);}}}
 function order(cx,cy){if(picks.mode==='watch')return;const us=ownUnitsSel();const bs=ownBldSel();
   if(bs&&!us.length){const n=pickEnt(cx,cy,e=>e.isN&&e.kind===nodeKind(0));const p=n?n.pos:groundAt(cx,cy);if(!p)return;bs.rally={x:p.x,z:p.z,node:n||null};marker(p.x,p.z,0xe8b04a);selDirty=true;return;}
@@ -3655,11 +3658,24 @@ mini.addEventListener('pointermove',e=>{if(miniDrag)miniTo(e);});mini.addEventLi
 
 /* ---------- pannelli ---------- */
 /* contatore della saturazione sopra i propri depositi (solo in Gioca): lavoratori / ideale (2 per giacimento); verde = pieno, arancio = troppi */
-let satT=0,satEls=[];function drawSat(){const box=$('#satl');if(!box||typeof satInfo!=='function')return;const show=gameOn&&!ended&&picks.mode==='play';let i=0;
+let satT=0,satEls=[];function drawSat(){const box=$('#satl');if(!box||typeof satInfo!=='function')return;const show=gameOn&&!ended&&picks.mode==='play';let i=0;satShown.clear();
   if(show){const R=RACES[teams[0].race];satInfo(0).forEach((v,b)=>{if(!v.ideal&&!v.w)return;const p=proj(b.pos.x,gy(b.pos.x,b.pos.z)+(b.top||4)+.3,b.pos.z);if(p.x<-40||p.y<-20||p.x>innerWidth+40||p.y>innerHeight+20)return;
-    let e=satEls[i];if(!e){e=document.createElement('div');box.appendChild(e);satEls.push(e);}const cls='sc'+(v.w>v.ideal?' over':v.w===v.ideal&&v.ideal?' ok':'');const h=ico(R.ipop,'#ccc')+v.w+'/'+v.ideal;
+    let e=satEls[i];if(!e){e=document.createElement('div');box.appendChild(e);satEls.push(e);}const cls='sc'+(v.w>v.ideal?' over':v.w===v.ideal&&v.ideal?' ok':'');const h=ico(R.ipop,'#ccc')+v.w+'/'+v.ideal;satShown.add(b);
     if(e._h!==h){e.innerHTML=h;e._h=h;}if(e.className!==cls)e.className=cls;e.style.left=Math.round(p.x)+'px';e.style.top=Math.round(p.y)+'px';e.style.display='';e.title=LT('Lavoratori su questi giacimenti / ideale (2 per giacimento)');i++;});}
   for(;i<satEls.length;i++)satEls[i].style.display='none';}
+/* temporizzatori (31 ottobre, richiesta dell'utente): secondi che mancano alla costruzione, al livello e all'unita' in addestramento.
+   Sopra l'edificio (solo i propri; in Osserva tutti) e nel pannello. Solo disegno: le regole non cambiano. */
+function bldLeft(b){if(b.dead)return -1;if(!b.built){let n=0;for(const u of units)if(!u.dead&&u.working&&u.order&&u.order.kind==='build'&&u.order.b===b)n++;return n?(1-b.prog)*b.T.time/n:-1;}
+  const it=b.queue[0];return it?Math.max(0,it.time-it.t):-1;}
+function fmtLeft(s){s=Math.max(0,Math.ceil(s-1e-6));return s>=60?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):s+' s';}
+let timEls=[],satShown=new Set();function drawTimers(){const box=$('#timl');if(!box||typeof box.appendChild!=='function')return;let i=0;
+  if(gameOn&&!ended){const vt=viewTeam();for(const b of blds){if(b.dead||!(vt<0||b.team===vt)||(b.built&&!b.queue.length))continue;if(!fogShown(vt,b))continue;const s=bldLeft(b);if(s<0)continue;
+    const h=b.built?(b.top||4)+.3:b.top*(.12+.88*b.prog)+.4;const p=proj(b.pos.x+UP.x*h,gy(b.pos.x,b.pos.z)+UP.y*h,b.pos.z+UP.z*h);const pb=proj(b.pos.x,gy(b.pos.x,b.pos.z),b.pos.z);if(p.x<-40||p.x>innerWidth+40||p.y>innerHeight+30||pb.y<130)continue;
+    let e=timEls[i];if(!e){e=document.createElement('div');e.className='tm';box.appendChild(e);timEls.push(e);}const it=b.built&&b.queue[0];
+    const t=(it&&it.kind==='level'?LT('LIV')+' '+it.lvl+' · ':'')+fmtLeft(s);if(e._t!==t){e.textContent=t;e._t=t;}
+    const dy=b.built?(satShown.has(b)?24:2):8;/* edificio alto con la cima fuori dallo schermo: l'etichetta resta sotto la barra in alto, sopra l'edificio */
+    e.style.left=Math.round(p.x)+'px';e.style.top=Math.round(Math.max(118,p.y-dy))+'px';e.style.display='';i++;}}
+  for(;i<timEls.length;i++)timEls[i].style.display='none';}
 let toastT=0;function placeToast(){const t=$('#toast'),tp=$('#top');if(!tp||!tp.children||!tp.children.length||typeof getComputedStyle!=='function')return;let y=0;for(const c of Array.from(tp.children)){if(c.hidden||getComputedStyle(c).display==='none')continue;y=Math.max(y,c.getBoundingClientRect().bottom);}if(y>0)t.style.top=Math.round(y+8)+'px';}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;placeToast();toastT=3.2;}const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* icone PixelLab delle risorse (EXTICON in pxdata.js): una classe CSS per icona, cosi' l'immagine sta una volta sola nella pagina; se l'icona manca resta il pallino colorato */
@@ -3705,8 +3721,8 @@ function renderSel(){const el=$('#sel');const sel=[...selection].filter(e=>!e.de
   if(placing){const T=BT[placing.key];h='<div class="ttl">'+esc(T.name)+'</div><div class="hint">'+esc(T.info)+'</div><div class="hint">'+(placing.touch?LT('Tocca una zona verde per scegliere il posto, poi premi Conferma.'):LT('Clic sul terreno per posizionarlo, tasto destro per annullare.'))+'</div>';}
   else if(!sel.length){const hintTxt=LT(picks.mode==='watch'?'Stai osservando due IA. Usa la minimappa e la velocità per seguire la partita; tocca un’unità o un edificio per vederne i dati.':coarse?'Tocca un lavoratore per costruire, un edificio per produrre unità. Con le unità selezionate tocca un nemico per attaccare o il terreno per avanzare.':'Seleziona un lavoratore per costruire, un edificio per produrre. Con le unità selezionate clic su un nemico per attaccare, sul terreno per avanzare.');h='';if(!window.__hintShown){window.__hintShown=1;toast(hintTxt);}}
   else if(sel[0].isB){const b=sel[0],T=b.T,mine=b.team===0||picks.mode==='watch';
-    h='<div class="ttl">'+esc(T.name)+(b.team!==0&&picks.mode!=='watch'?' <span class="foe">'+LT('nemico')+'</span>':'')+'</div>'+bar(b.built?b.hp/b.maxhp:b.prog,b.built?'#8fd16a':'#6fb3e6')+'<div class="sub">'+(b.built?fmt(b.hp)+' / '+fmt(b.maxhp)+' '+LT('vita'):LTf('In costruzione · {0}%',Math.round(b.prog*100)))+'</div>';
-    if(mine&&b.queue.length)h+='<div class="queue">'+b.queue.map((it,i)=>'<button type="button" class="qi" data-q="'+i+'" title="'+LT('Annulla e recupera le risorse')+'">'+(it.kind==='unit'?'<img alt="" src="'+icon(it.key,b.team)+'">':'<span class="gl">'+(it.kind==='level'?LT('LIV')+' '+it.lvl:RESEARCH[it.r].glyph)+'</span>')+(i===0?'<i style="width:'+Math.round(it.t/it.time*100)+'%"></i>':'')+'</button>').join('')+'</div>';
+    h='<div class="ttl">'+esc(T.name)+(b.team!==0&&picks.mode!=='watch'?' <span class="foe">'+LT('nemico')+'</span>':'')+'</div>'+bar(b.built?b.hp/b.maxhp:b.prog,b.built?'#8fd16a':'#6fb3e6')+'<div class="sub">'+(b.built?fmt(b.hp)+' / '+fmt(b.maxhp)+' '+LT('vita'):LTf('In costruzione · {0}%',Math.round(b.prog*100))+(bldLeft(b)>=0?' · '+fmtLeft(bldLeft(b)):''))+'</div>';
+    if(mine&&b.queue.length)h+='<div class="queue">'+b.queue.map((it,i)=>'<button type="button" class="qi" data-q="'+i+'" title="'+LT('Annulla e recupera le risorse')+'">'+(it.kind==='unit'?'<img alt="" src="'+icon(it.key,b.team)+'">':'<span class="gl">'+(it.kind==='level'?LT('LIV')+' '+it.lvl:RESEARCH[it.r].glyph)+'</span>')+(i===0?'<i style="width:'+Math.round(it.t/it.time*100)+'%"></i><b class="qt">'+fmtLeft(it.time-it.t)+'</b>':'')+'</button>').join('')+'</div>';
     else h+='<div class="hint">'+esc(T.info)+(b.T.def?LTf(' Danno {0}/s, gittata {1}.',T.def.dps,T.def.rng):'')+'</div>';}
   else{const us=sel.filter(u=>!u.isB&&!u.isN);if(!us.length){const n=sel[0];h=n&&n.isN?'<div class="ttl">'+LTf('Giacimento: {0}',LT({vent:'Bocca di magma',sap:'Albero di linfa',gold:'Vena d’oro',scrap:n.wreck?'Relitto':'Cumulo di rottami'}[n.kind]))+'</div><div class="sub">'+LTf('{0} rimasti',fmt(n.amt))+'</div>':'';}
     else if(us.length===1){const u=us[0],T=u.T;h='<div class="one"><img alt="" src="'+icon(u.key,u.team)+'"><div style="min-width:0"><div class="ttl">'+esc(T.name)+(u.team!==0&&picks.mode!=='watch'?' <span class="foe">'+LT('nemico')+'</span>':'')+'</div>'+bar(u.hp/u.maxhp,'#8fd16a')+'<div class="sub">'+fmt(u.hp)+' / '+fmt(u.maxhp)+' '+LT('vita')+(u.carry?LTf(' · trasporta {0}',u.carry.amt):'')+'</div></div></div>'+
@@ -3754,13 +3770,13 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   else if(gameOn&&ended){for(const u of units)if(u.dead)u.deathT+=rdt;}
   UP.set(0,1,0).applyQuaternion(camera.quaternion);
   const vdt=rdt*(speed||0);
-  fogTick(rdt);for(const u of units)syncUnit(u,speed?vdt:0);for(const b of blds)syncBld(b);
+  fogTick(rdt);for(const u of units)syncUnit(u,speed?vdt:0);for(const b of blds)syncBld(b);drawTimers();
   updateAtmosphere(clock,rdt);sndTick(rdt);updateMap2(clock,rdt);updateFx(rdt*Math.max(1,speed));updateMarkers(rdt);updateSmoke(rdt);updateEmbers(rdt,clock);updateFireflies(clock);updateKeys(rdt);animateBases(clock,rdt*(speed?1:0));
   lavaT+=rdt;if(lavaT>.12){lavaT=0;paintLava(clock);lavaTex.needsUpdate=true;}
   if(!gameOn&&!reduceMotion){cam.tx=Math.sin(clock*.06)*20;cam.tz=Math.sin(clock*.045)*14;cam.dist=50;}
   {const zb=cam.dist<26?1.15:1;if(zb!==zoomBoost){zoomBoost=zb;resize();}}
   placeCamera();placeSun();zonesTick(rdt);
-  const rb=ownBldSel();if(rb&&rb.rally){rallyFlag.visible=true;rallyFlag.position.set(rb.rally.x,0,rb.rally.z);}else rallyFlag.visible=false;
+  const rb=ownBldSel();if(rb&&rb.rally){rallyFlag.visible=true;rallyFlag.position.set(rb.rally.x,gy(rb.rally.x,rb.rally.z),rb.rally.z);}else rallyFlag.visible=false;
   uiT-=rdt;if(gameOn&&(selDirty||uiT<=0)){renderRes();renderSel();renderCmd();selDirty=false;uiT=.3;}
   miniT-=rdt;if(gameOn&&miniT<=0){drawMini();miniT=.2;}
   if(toastT>0){placeToast();toastT-=rdt;if(toastT<=0)$('#toast').hidden=true;}
