@@ -10,7 +10,7 @@
 
 ## Italiano
 
-Strategia in tempo reale in stile dieselpunk, con tocchi steampunk. Si gioca nel browser: Chrome su computer, telefono e tablet Android. Non serve installare niente.
+Strategia in tempo reale in stile dieselpunk, con tocchi steampunk. Si gioca nel browser: Chrome su computer, telefono e tablet Android. Non serve installare niente; se vuoi, dove il browser lo permette, puoi tenerlo come app con il pulsante **Installa il gioco**.
 
 Questa è una **versione di prova per gli amici tester**: ogni commento è benvenuto.
 
@@ -23,20 +23,23 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Difficoltà**: Facile, Normale, Difficile.
 - **Avversario**: scegli la razza oppure lascia "a caso".
 - **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con ponti e passerelle in posizioni sempre diverse.
+- **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
 - La base ha due livelli. La popolazione massima è 55.
+- **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
 
 ### Comandi
 **Mouse e tastiera**: clic o riquadro per selezionare; clic su un nemico, un giacimento o il terreno per dare ordini (va bene anche il tasto destro). WASD o frecce e minimappa per muovere la visuale, rotella per lo zoom. Esc annulla.
 
-**Telefono e tablet**: tocca per selezionare, doppio tocco per tutte le unità dello stesso tipo. Tocca un nemico, un giacimento o il terreno per dare ordini. Trascina per spostare la visuale, pizzica per lo zoom.
+**Telefono e tablet**: tocca per selezionare, doppio tocco per tutte le unità dello stesso tipo. Tocca un nemico, un giacimento o il terreno per dare ordini. Trascina per spostare la visuale, pizzica per lo zoom. Con dei lavoratori selezionati, tocca un altro lavoratore per aggiungerlo. Per costruire, tocca una zona verde e poi **Conferma**.
 
-### Le quattro razze
+### Le cinque razze
 | Razza | Chi sono | Risorse | Élite |
 |---|---|---|---|
-| **Durmagh** | Nani vulcanici | Magma | Magminator |
+| **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator |
 | **Thalren** | Elfi silvani | Linfa | Custode della foresta |
 | **Vaelrith** | Elfi oscuri, setta steampunk che prega | Oro e preghiere | The Sealed |
 | **Scrappers** | Goblin rottamai chimici | Rottami e fanghi tossici | Krankenstein |
+| **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō |
 
 ### Se il gioco va a scatti
 Nel menu di pausa trovi **Qualità grafica** (Alta, Media, Bassa). Il gioco la sceglie da solo e la abbassa se serve. Con **Info prestazioni** → *Copia i dati* puoi mandarci i numeri del tuo dispositivo: ci aiutano molto.
@@ -48,7 +51,7 @@ Personaggi, edifici e terreni disegnati con [PixelLab](https://www.pixellab.ai/)
 
 ## English
 
-A dieselpunk real-time strategy game with a touch of steampunk. It runs in the browser: Chrome on desktop, Android phones and tablets. Nothing to install.
+A dieselpunk real-time strategy game with a touch of steampunk. It runs in the browser: Chrome on desktop, Android phones and tablets. Nothing to install; if you like, where the browser allows it, you can keep it as an app with the **Install the game** button.
 
 This is a **test build for friends**: all feedback is welcome.
 
@@ -61,20 +64,23 @@ You start with your main base and five workers already gathering. Collect your r
 - **Difficulty**: Easy, Normal, Hard.
 - **Opponent**: pick a race or leave it random.
 - **Map**: different every game. The river can be toxic sludge, lava or water, with bridges and walkways in new places each time.
+- **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
 - Bases have two levels. Population cap is 55.
+- **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
 
 ### Controls
 **Mouse and keyboard**: click or drag a box to select; click an enemy, a resource node or the ground to give orders (right-click works too). WASD or arrow keys and the minimap move the camera, mouse wheel zooms. Esc cancels.
 
-**Phone and tablet**: tap to select, double-tap to select all units of the same type. Tap an enemy, a resource node or the ground to give orders. Drag to move the camera, pinch to zoom.
+**Phone and tablet**: tap to select, double-tap to select all units of the same type. Tap an enemy, a resource node or the ground to give orders. Drag to move the camera, pinch to zoom. With workers selected, tap another worker to add it. To build, tap a green area and then **Confirm**.
 
-### The four races
+### The five races
 | Race | Who they are | Resources | Elite |
 |---|---|---|---|
-| **Durmagh** | Volcanic dwarves | Magma | Magminator |
+| **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator |
 | **Thalren** | Forest elves | Sap | Forest Warden |
 | **Vaelrith** | Dark elves, a praying steampunk sect | Gold and prayers | The Sealed |
 | **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein |
+| **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō |
 
 ### If the game stutters
 The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
