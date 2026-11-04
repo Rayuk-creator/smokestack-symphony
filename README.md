@@ -32,6 +32,8 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 
 **Telefono e tablet**: tocca per selezionare, doppio tocco per tutte le unità dello stesso tipo. Tocca un nemico, un giacimento o il terreno per dare ordini. Trascina per spostare la visuale, pizzica per lo zoom. Con dei lavoratori selezionati, tocca un altro lavoratore per aggiungerlo. Per costruire, tocca una zona verde e poi **Conferma**.
 
+**Tiratori**: da fermi sparano solo a chi hanno a tiro e non inseguono; se li colpiscono da fuori tiro si avvicinano. Per farli inseguire, ordina di attaccare un nemico. Nei gruppi misti il corpo a corpo va davanti. I tasti **Tiratori** e **Mischia** selezionano tutte le unità di quel tipo.
+
 ### Le cinque razze
 | Razza | Chi sono | Risorse | Élite |
 |---|---|---|---|

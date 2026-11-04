@@ -303,6 +303,7 @@ const EN={
   'ESE':'ARMY','Eserciti':'Armies','Seleziona tutte le unità da combattimento':'Select all combat units',
   'Annulla':'Cancel','Annulla la costruzione (Esc o tasto destro)':'Cancel construction (Esc or right-click)',
   'Esercito':'Army','Seleziona tutto l’esercito (Ctrl+A)':'Select the whole army (Ctrl+A)',
+  'TIR':'RNG','Tiratori':'Ranged','Seleziona tutti i tiratori':'Select all ranged units','Nessun tiratore':'No ranged units','MIS':'MEL','Mischia':'Melee','Seleziona tutte le unità corpo a corpo':'Select all melee units','Nessuna unità corpo a corpo':'No melee units',
   'LAV':'IDLE','Inattivi':'Idle','Seleziona un lavoratore inattivo':'Select an idle worker','Vai alla base principale':'Go to the main base',
   'Riquadro':'Box select','Trascina per selezionare più unità':'Drag to select several units',
   'Sali di livello':'Level up','Livello {0}: sblocca nuovi edifici e unità, popolazione massima {1}':'Level {0}: unlocks new buildings and units, max population {1}',
@@ -1941,6 +1942,8 @@ Object.assign(TYPES.mortaio,{cost:[160,50]});
 Object.assign(TYPES.magminator,{cost:[300,120]});
 /* 3 novembre, scelta dell'utente: Teppisti a COPPIE: un clic = 2 unita', 70 rottami, 15 s, 1 posto di popolazione la coppia, massimo 20 Teppisti */
 Object.assign(TYPES.teppista,{cost:[70,0],time:15,pop:.5,pair:2,max:20,info:'Un clic, due Teppisti: costano poco e arrivano a ondate. Massimo 20.'});
+/* 4 novembre, scelta dell'utente: gittata x1,25 ai tiratori, cosi' a schermo si staccano dal corpo a corpo (figure sovrapposte 20% -> 8%, tools/gittata.js); Mortaio e Carro restano a 9,5 */
+for(const k in TYPES){const t=TYPES[k];if(t.rng>=4&&t.rng<9&&!t.worker&&!t.pray)t.rng=Math.round(t.rng*125)/100;}
 /* richiesta: +1% raccolta Durmagh */
 TYPES.minatore.worker.carry=10.1;
 
@@ -3168,6 +3171,16 @@ function visibleTo(team,e){if(team<0||e.team===team)return true;if(!hgSees(team,
 
 /* ---------- combattimento ---------- */
 function reach(u){return u.T.rng+(u.T.rng<=1.7?.6:.35);}
+/* 4 novembre, scelta dell'utente: i TIRATORI (gittata 4 o piu') stanno dove li mette chi gioca: sparano a chi e' a tiro e non inseguono; si muovono da soli solo se colpiti da fuori tiro */
+function isShooter(T){return T.rng>=4&&!T.worker&&!T.pray;}
+function rangeTo(u,t){return reach(u)+(t.isB?t.r:0)+(t.T&&t.T.big&&!t.isB?.5:0);}
+/* gruppo misto: corpo a corpo davanti, tiratori dietro, rispetto alla direzione di marcia. Le unita' grandi tengono i posti adatti a loro (formationSpots) */
+function roleSpots(list,spots,px,pz){if(!list.some(u=>isShooter(u.T))||list.every(u=>isShooter(u.T)))return spots;
+  let cx=0,cz=0;list.forEach(u=>{cx+=u.pos.x;cz+=u.pos.z;});cx/=list.length;cz/=list.length;let dx=px-cx,dz=pz-cz;const dl=Math.hypot(dx,dz);if(dl<.5)return spots;dx/=dl;dz/=dl;
+  const out=spots.slice();for(const big of [false,true]){const idx=[];list.forEach((u,i)=>{if((u.ur>=1)===big)idx.push(i);});
+    const sp=idx.map(i=>spots[i]).sort((a,b)=>(b.x*dx+b.z*dz)-(a.x*dx+a.z*dz));
+    const us=idx.slice().sort((a,b)=>(isShooter(list[a].T)?1:0)-(isShooter(list[b].T)?1:0));us.forEach((i,k)=>{out[i]=sp[k];});}
+  return out;}
 function acquire(u,R){let best=null,bd=R;const melee=u.T.rng<=1.7;
   for(const v of units){if(v.dead||v.team===u.team)continue;let d=d2(u,v);if(d>=R)continue;if(u.T.minRng&&d<u.T.minRng)continue;
     if(melee){let c=0;for(const a of units)if(a!==u&&a.target===v&&a.team===u.team&&!a.dead&&a.T.rng<=1.7)c++;d+=Math.max(0,c-1)*1.3;}
@@ -3183,7 +3196,7 @@ function damage(src,tgt,base){if(tgt.dead||src.team===tgt.team)return;const A=sr
   if(!tgt.isB){if(A.slow){tgt.slowUntil=now+A.slow.t;tgt.slowF=Math.min(.7,A.slow.f*(tgt.T.arm>=.2?1.5:1));}if(A.curse){tgt.curseUntil=now+A.curse.t;tgt.curseF=A.curse.f;}if(A.shred){tgt.shredUntil=now+A.shred.t;tgt.shredA=A.shred.a;}if(tgt.T.stealth)tgt.revealUntil=Math.max(tgt.revealUntil,now+1.2);}
   const vt=teams[tgt.team];vt.alarm={x:src.pos.x,z:src.pos.z,t:now};
   if(tgt.team===0&&picks.mode==='play'&&now-vt.alarmT>12){vt.alarmT=now;sndMine('alarm');toast(LT(tgt.T.worker||tgt.isB?'La tua base è sotto attacco':'Le tue unità sono sotto attacco'));}
-  if(!tgt.isB&&!tgt.T.worker&&!tgt.T.pray&&!tgt.target&&(!tgt.order||tgt.order.kind==='amove')&&visibleTo(tgt.team,src))tgt.target=src;
+  if(!tgt.isB&&!tgt.T.worker&&!tgt.T.pray&&!tgt.target&&(!tgt.order||tgt.order.kind==='amove')&&visibleTo(tgt.team,src)){tgt.target=src;if(isShooter(tgt.T))tgt.reactUntil=now+4;}
   if(tgt.hp<=0){if(tgt.isB)killBuilding(tgt,src);else killUnit(tgt,src);}}
 function splash(src,cx,cz,rad,base,mult,skip){const list=[];for(const v of units){if(v.dead||v.team===src.team||v===skip)continue;if(Math.hypot(v.pos.x-cx,v.pos.z-cz)<rad+v.ur*.5)list.push(v);}
   for(const b of blds){if(b.dead||b.team===src.team||b===skip)continue;if(Math.hypot(b.pos.x-cx,b.pos.z-cz)<rad+b.r)list.push(b);}list.forEach(v=>damage(src,v,base*mult));}
@@ -3342,10 +3355,13 @@ function updateUnit(u,dt){if(u.dead){u.deathT+=dt;return;}
   if(u.T.pray){if(o)u.idleT=0;else{u.idleT=(u.idleT||0)+dt;if(u.idleT>3){u.idleT=0;sendPray(u);}return;}}
   if(o&&o.kind==='attack'){if(o.ent.dead)u.order=null;else if(!visibleTo(u.team,o.ent)){if(shownTo(u.team,o.ent)){u.target=null;if(o.ent.isB){const a=approach(o.ent,u,1);goTo(u,a.x,a.z,dt);}else goTo(u,o.ent.pos.x,o.ent.pos.z,dt);return;}u.order=null;}else u.target=o.ent;}
   if(o&&o.kind==='move'){u.target=null;if(goTo(u,o.x,o.z,dt)<.4)u.order=null;return;}
-  u.acqT-=dt;if(!u.target&&!u.T.worker&&!u.T.pray&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=acquire(u,o?8:7);}
+  const sht=isShooter(u.T);
+  /* il tiratore lascia chi esce dal tiro, salvo ordine di attacco, reazione a un colpo o edificio raggiunto dalla marcia */
+  if(sht&&u.target&&!(o&&o.kind==='attack')&&now>=(u.reactUntil||0)&&u.target!==u.tgtKeep&&d2(u,u.target)>rangeTo(u,u.target)+.3)u.target=null;
+  u.acqT-=dt;if(!u.target&&!u.T.worker&&!u.T.pray&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=acquire(u,sht?reach(u):o?8:7);}
   if(u.target){engage(u,u.target,dt);return;}
-  if(o&&o.kind==='amove'){if(goTo(u,o.x,o.z,dt)<.9){const b=acquireBld(u,12);if(b)u.target=b;else u.order=null;}}}
-function engage(u,t,dt){const range=reach(u)+(t.isB?t.r:0)+(t.T&&t.T.big&&!t.isB?.5:0);const d=d2(u,t);
+  if(o&&o.kind==='amove'){if(goTo(u,o.x,o.z,dt)<.9){const b=acquireBld(u,12);if(b){u.target=b;u.tgtKeep=b;}else u.order=null;}}}
+function engage(u,t,dt){const range=rangeTo(u,t);const d=d2(u,t);
   if(u.T.minRng&&!t.isB&&d<u.T.minRng){goTo(u,u.pos.x+(u.pos.x-t.pos.x)/Math.max(d,.1)*2,u.pos.z+(u.pos.z-t.pos.z)/Math.max(d,.1)*2,dt);return;}
   if(d>range){if(t.isB){const a=approach(t,u,Math.min(reach(u),2.2)*.7);goTo(u,a.x,a.z,dt);}else goTo(u,t.pos.x,t.pos.z,dt);return;}
   if(Math.abs(t.pos.x-u.pos.x)>.05)u.face=Math.sign(t.pos.x-u.pos.x);if(now-u.lastCombat>4)u.engagedAt=now;u.lastCombat=now;
@@ -3434,11 +3450,21 @@ function aiUpdate(tm,dt){tm.aiT-=dt;if(tm.aiT>0)return;tm.aiT=.7*(tm.think||1);c
     const opts=b.T.trains.filter(k=>COMP[race][k]&&!typeFull(t,k)&&unitAvailable(tm,k,myB)&&(k!=='spia'||spies<2)&&(!TYPES[k].elite||elites<(tm.level>=MAXLVL?elMax:0)));if(!opts.length)return;
     const k=weightedPick(opts,COMP[race]);const T=TYPES[k];if(tm.res.p-T.cost[0]>=reserve[0]&&tm.res.s-T.cost[1]>=reserve[1]){tryTrain(b,k);if(k==='spia'&&b.queue.length)spies++;}});
   let threat=null,td=Infinity;for(const v of units){if(v.dead||v.team===t||!tvSeesU(t,v))continue;for(const b of myB){const d=d2(v,b)-b.r;if(d<14&&d<td){td=d;threat=v;}}}
-  if(threat){S.threatT=now;A.forEach(u=>{if(!u.target&&(!u.order||u.order.def||u.order.kind!=='amove'||Math.hypot(u.pos.x-threat.pos.x,u.pos.z-threat.pos.z)<26))u.order={kind:'amove',x:threat.pos.x,z:threat.pos.z,def:1};});return;}
+  if(threat){S.threatT=now;A.forEach(u=>{if(!u.target&&(!u.order||u.order.def||u.order.kind!=='amove'||Math.hypot(u.pos.x-threat.pos.x,u.pos.z-threat.pos.z)<26))u.order={kind:'amove',x:threat.pos.x,z:threat.pos.z,def:1};});aiShooters(A);return;}
   if(!hq&&!myB.length)return;const home=(hq||myB[0]).pos;
   if(now>=(tm.atk||0)&&(armyPop>=S.waveSize||(popUsed(t)>=cap-2&&tm.level>=MAXLVL&&armyPop>12))){const tgt=aiTarget(t,home);if(tgt){A.forEach(u=>{if(!u.target)u.order={kind:'amove',x:tgt.pos.x,z:tgt.pos.z};});S.wave++;S.waveSize=Math.min(42,S.waveSize+(tm.waveInc||5));}}
   else A.forEach(u=>{if(u.target||u.order)return;if(Math.hypot(u.pos.x-home.x,u.pos.z-home.z)>24){const tgt=aiTarget(t,u.pos);if(tgt)u.order={kind:'amove',x:tgt.pos.x,z:tgt.pos.z};}
-    else{const f=L2W(t,(u.id%7-3)*1.7,-12-(u.id%3)*1.4);if(Math.hypot(u.pos.x-f.x,u.pos.z-f.z)>3)u.order={kind:'amove',x:f.x,z:f.z};}});}
+    else{const f=L2W(t,(u.id%7-3)*1.7,(isShooter(u.T)?-9:-12)-(u.id%3)*1.4);if(Math.hypot(u.pos.x-f.x,u.pos.z-f.z)>3)u.order={kind:'amove',x:f.x,z:f.z};}});
+  aiShooters(A);}
+/* 4 novembre: l'IA mette i tiratori dietro il proprio corpo a corpo in azione, a una distanza che dipende dalla gittata; senza corpo a corpo vicino riprendono la marcia */
+function aiShooters(A){const M=A.filter(u=>!isShooter(u.T)&&!u.T.stealth&&(u.target||(u.order&&u.order.kind==='amove')));
+  for(const s of A){const o=s.order;if(!isShooter(s.T)||s.target||!o||o.kind!=='amove')continue;
+    let n=0,mx=0,mz=0;for(const m of M)if(Math.hypot(m.pos.x-s.pos.x,m.pos.z-s.pos.z)<18){mx+=m.pos.x;mz+=m.pos.z;n++;}
+    const dest=o.aiDest||{x:o.x,z:o.z};
+    if(!n){if(o.aiDest)s.order={kind:'amove',x:dest.x,z:dest.z,def:o.def};continue;}
+    mx/=n;mz/=n;let dx=dest.x-mx,dz=dest.z-mz;const dl=Math.hypot(dx,dz);if(dl<3)continue;dx/=dl;dz/=dl;
+    const back=Math.max(3,s.T.rng-3),off=(s.id%7-3)*1.4;
+    s.order={kind:'amove',x:mx-dx*back-dz*off,z:mz-dz*back+dx*off,aiDest:dest,def:o.def};}}
 function nearestEnemyBld(t,p){let best=null,bd=Infinity;for(const b of blds){if(b.dead||b.team===t)continue;const d=Math.hypot(b.pos.x-p.x,b.pos.z-p.z);if(d<bd){bd=d;best=b;}}return best;}
 
 /* ---------- ciclo di simulazione ---------- */
@@ -3714,7 +3740,7 @@ function order(cx,cy){if(picks.mode==='watch')return;const us=ownUnitsSel();cons
   const p=groundAt(cx,cy);if(!p)return;p.x=Math.max(-MAP.X+1,Math.min(MAP.X-1,p.x));p.z=Math.max(-MAP.Z+1,Math.min(MAP.Z-1,p.z));
   const list=(workers.length&&!others.length?workers:others.length?others.concat(workers.filter(w=>!w.order||w.order.kind==='move'||!['gather','return','build'].includes(w.order.kind))):us).sort((a,b)=>a.pos.x-b.pos.x);
   const n=list.length,cols=Math.ceil(Math.sqrt(n)),rows=Math.ceil(n/cols);
-  const spots=formationSpots(list,p.x,p.z);list.forEach((u,i)=>{const kind=moveOnly||u.T.worker||u.T.pray?'move':'amove';u.order={kind,x:spots[i].x,z:spots[i].z};u.target=null;u.path=null;});
+  const spots=roleSpots(list,formationSpots(list,p.x,p.z),p.x,p.z);list.forEach((u,i)=>{const kind=moveOnly||u.T.worker||u.T.pray?'move':'amove';u.order={kind,x:spots[i].x,z:spots[i].z};u.target=null;u.path=null;});
   marker(p.x,p.z,moveOnly?0x6fb3a6:0x8fd16a);}
 function tryPlace(cx,cy){const p=groundAt(cx,cy);if(!p||!placing)return;const ws=placing.workers.filter(w=>!w.dead);if(!ws.length){cancelPlacing();return;}
   if(FOG.on&&!fogExpXZ(p.x,p.z)){toast(LT('Zona non ancora esplorata'));return;}
@@ -3776,6 +3802,7 @@ addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));addEventListener('
 function clampCam(){cam.tx=Math.max(-54,Math.min(54,cam.tx));cam.tz=Math.max(-42,Math.min(42,cam.tz));}
 function updateKeys(dt){const s=cam.dist*.75*dt;if(keys.has('a')||keys.has('arrowleft'))cam.tx-=s;if(keys.has('d')||keys.has('arrowright'))cam.tx+=s;if(keys.has('w')||keys.has('arrowup'))cam.tz-=s;if(keys.has('s')||keys.has('arrowdown'))cam.tz+=s;clampCam();}
 function selectArmy(){const t=picks.mode==='watch'?-1:0;setSel(units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)),false);}
+function selectRole(sh){const t=picks.mode==='watch'?-1:0;const L=units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)&&isShooter(u.T)===sh);if(!L.length){toast(LT(sh?'Nessun tiratore':'Nessuna unità corpo a corpo'));return;}setSel(L,false);}
 function selectIdleWorker(){const ws=units.filter(u=>u.team===0&&!u.dead&&u.T.worker&&!u.order);if(!ws.length){toast(LT('Nessun lavoratore inattivo'));return;}const w=ws[(lastIdle++)%ws.length];setSel([w],false);cam.tx=w.pos.x;cam.tz=w.pos.z+4;}
 let lastIdle=0;
 function focusBase(){const hq=blds.find(b=>b.team===0&&!b.dead&&b.T.role==='hq')||blds.find(b=>b.team===0&&!b.dead);if(!hq)return;setSel([hq],false);cam.tx=hq.pos.x;cam.tz=hq.pos.z-4;}
@@ -3855,7 +3882,7 @@ function btn(o){return o;}
 function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams[0];if(picks.mode==='watch')return[btn({glyph:LT('ESE'),label:LT('Eserciti'),on:selectArmy,title:LT('Seleziona tutte le unità da combattimento')})];
   if(placing){const ca=btn({glyph:'X',label:LT('Annulla'),on:cancelPlacing,title:LT('Annulla la costruzione (Esc o tasto destro)')});if(!placing.touch)return[ca];
     const why=placeWhy();return[btn({glyph:'✓',label:LT('Conferma'),on:confirmPlace,dis:!!why,why,title:LT('Costruisci qui')}),ca];}
-  const base=[btn({glyph:LT('ESE'),label:LT('Esercito'),on:selectArmy,title:LT('Seleziona tutto l’esercito (Ctrl+A)')}),btn({glyph:LT('LAV'),label:LT('Inattivi'),on:selectIdleWorker,title:LT('Seleziona un lavoratore inattivo')}),btn({glyph:'BASE',label:'Base',on:focusBase,title:LT('Vai alla base principale')})];
+  const base=[btn({glyph:LT('ESE'),label:LT('Esercito'),on:selectArmy,title:LT('Seleziona tutto l’esercito (Ctrl+A)')}),btn({glyph:LT('TIR'),label:LT('Tiratori'),on:()=>selectRole(true),title:LT('Seleziona tutti i tiratori')}),btn({glyph:LT('MIS'),label:LT('Mischia'),on:()=>selectRole(false),title:LT('Seleziona tutte le unità corpo a corpo')}),btn({glyph:LT('LAV'),label:LT('Inattivi'),on:selectIdleWorker,title:LT('Seleziona un lavoratore inattivo')}),btn({glyph:'BASE',label:'Base',on:focusBase,title:LT('Vai alla base principale')})];
   if(coarse)base.push(btn({glyph:'[ ]',label:LT('Riquadro'),pressed:boxMode,on:()=>{boxMode=!boxMode;setBoxUI();},title:LT('Trascina per selezionare più unità')}));
   if(!sel.length||sel[0].team!==0||sel[0].isN)return base;
   const e=sel[0];
@@ -3871,12 +3898,12 @@ function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams
   if(allW&&coarse){const others=units.filter(u=>u.team===0&&!u.dead&&u.T.worker&&!selection.has(u));
     out.push(btn({glyph:'+1',label:LT('Aggiungi'),dis:!others.length,why:LT('Nessun altro lavoratore'),on:()=>{const c=us.reduce((m,u)=>({x:m.x+u.pos.x/us.length,z:m.z+u.pos.z/us.length}),{x:0,z:0});let best=null,bd=1e9;others.forEach(u=>{const d=Math.hypot(u.pos.x-c.x,u.pos.z-c.z);if(d<bd){bd=d;best=u;}});if(best){selection.add(best);selDirty=true;}},title:LT('Aggiungi il lavoratore più vicino')}));
     out.push(btn({glyph:'−1',label:LT('Togli'),dis:us.length<2,why:LT('È già uno solo'),on:()=>{selection.delete(us[us.length-1]);selDirty=true;},title:LT('Togli l’ultimo lavoratore aggiunto')}));
-    out.push(base[3]);}
+    out.push(base[5]);}
   const pr=us.filter(u=>u.T.pray),allP=pr.length===us.length;
   if(pr.length)out.push(btn({glyph:LT('PREGA'),label:LT('Prega'),on:()=>{let ok=0;pr.forEach(u=>{if(u.order&&u.order.kind==='pray'||sendPray(u))ok++;});if(ok<pr.length)toast(prayShrines(0).length?LTf('Al massimo {0} accoliti per Santuario',PRAY_MAX):LT('Serve un Santuario oscuro'));},title:LT('Torna a pregare davanti al Santuario oscuro')}));
   out.push(btn({glyph:'STOP',label:LT('Fermi'),on:()=>us.forEach(u=>{u.order=null;u.target=null;}),title:LT('Interrompi gli ordini')}));
   if(!allW&&!allP)out.push(btn({glyph:moveOnly?LT('MUOVI'):LT('AVANZA'),label:moveOnly?LT('Solo muovi'):LT('Avanzata'),pressed:moveOnly,on:()=>{moveOnly=!moveOnly;selDirty=true;toast(moveOnly?LT('Solo movimento: le unità ignorano i nemici finché non arrivano'):LT('Avanzata: le unità attaccano i nemici lungo la strada'));},title:LT('Cambia come si muovono le unità')}));
-  out.push(base[0]);return out;}
+  out.push(base[0]);if(!allW&&!allP)out.push(base[1],base[2]);return out;}
 function renderCmd(){const el=$('#cmd');cmdSpecs=buildSpecs();const race=teams[0].race;
   const h=cmdSpecs.map((s,i)=>'<button type="button" class="cb'+(s.bld?' bld':'')+(s.done?' done':'')+'" data-i="'+i+'"'+(s.dis?' aria-disabled="true"':'')+(s.pressed?' aria-pressed="true"':'')+' title="'+esc(s.title||s.label)+'">'+
     (s.icon?'<img alt="" src="'+s.icon+'">':'<span class="gl">'+esc(s.glyph||'')+'</span>')+'<span class="lb">'+esc(s.label)+'</span>'+(s.lock?'<span class="lk">'+s.lock+'</span>':s.done?'<span class="lk">'+LT('Fatto')+'</span>':s.cost?'<span class="cs">'+costHTML(s.cost,race)+'</span>':'')+'</button>').join('');
