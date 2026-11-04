@@ -3358,7 +3358,7 @@ function updateUnit(u,dt){if(u.dead){u.deathT+=dt;return;}
   const sht=isShooter(u.T);
   /* il tiratore lascia chi esce dal tiro, salvo ordine di attacco, reazione a un colpo o edificio raggiunto dalla marcia */
   if(sht&&u.target&&!(o&&o.kind==='attack')&&now>=(u.reactUntil||0)&&u.target!==u.tgtKeep&&d2(u,u.target)>rangeTo(u,u.target)+.3)u.target=null;
-  u.acqT-=dt;if(!u.target&&!u.T.worker&&!u.T.pray&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=acquire(u,sht?reach(u):o?8:7);}
+  u.acqT-=dt;if(!u.target&&!u.T.worker&&!u.T.pray&&(!o||o.kind==='amove')&&u.acqT<=0){u.acqT=.25;u.target=(sht&&teams[u.team].ai&&aiFinishPick(u))||acquire(u,sht?reach(u):o?8:7);}
   if(u.target){engage(u,u.target,dt);return;}
   if(o&&o.kind==='amove'){if(goTo(u,o.x,o.z,dt)<.9){const b=acquireBld(u,12);if(b){u.target=b;u.tgtKeep=b;}else u.order=null;}}}
 function engage(u,t,dt){const range=rangeTo(u,t);const d=d2(u,t);
@@ -3456,6 +3456,8 @@ function aiUpdate(tm,dt){tm.aiT-=dt;if(tm.aiT>0)return;tm.aiT=.7*(tm.think||1);c
   else A.forEach(u=>{if(u.target||u.order)return;if(Math.hypot(u.pos.x-home.x,u.pos.z-home.z)>24){const tgt=aiTarget(t,u.pos);if(tgt)u.order={kind:'amove',x:tgt.pos.x,z:tgt.pos.z};}
     else{const f=L2W(t,(u.id%7-3)*1.7,(isShooter(u.T)?-9:-12)-(u.id%3)*1.4);if(Math.hypot(u.pos.x-f.x,u.pos.z-f.z)>3)u.order={kind:'amove',x:f.x,z:f.z};}});
   aiShooters(A);}
+/* 4 novembre: mira dei tiratori dell'IA: quando restano senza bersaglio, se a tiro c'e' un soldato sotto meta' vita scelgono il piu' ferito; altrimenti il piu' vicino. Non cambiano mai bersaglio mentre sparano. Vita in percentuale, cosi' nessuna razza e' svantaggiata; lavoratori esclusi */
+function aiFinishPick(u){let best=null,bq=.5;for(const v of units){if(v.dead||v.team===u.team||v.T.worker)continue;const q=v.hp/v.maxhp;if(q>=bq)continue;const d=d2(u,v);if(d>rangeTo(u,v)||(u.T.minRng&&d<u.T.minRng)||!tvSeesU(u.team,v))continue;bq=q;best=v;}return best;}
 /* 4 novembre: l'IA mette i tiratori dietro il proprio corpo a corpo in azione, a una distanza che dipende dalla gittata; senza corpo a corpo vicino riprendono la marcia */
 function aiShooters(A){const M=A.filter(u=>!isShooter(u.T)&&!u.T.stealth&&(u.target||(u.order&&u.order.kind==='amove')));
   for(const s of A){const o=s.order;if(!isShooter(s.T)||s.target||!o||o.kind!=='amove')continue;
