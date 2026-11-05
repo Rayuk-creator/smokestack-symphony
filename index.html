@@ -2,6 +2,15 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14110f">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Smokestack">
+<script>window.PWA=1</script>
 <title>Smokestack Symphony</title>
 <meta name="description" content="Strategia in tempo reale dieselpunk: cinque razze, ciminiere, magma e fanghi tossici. Si gioca nel browser, anche da telefono e tablet.">
 <meta property="og:title" content="Smokestack Symphony">
@@ -221,7 +230,7 @@ button.primary:hover{background:#e8b65a}
 </div>
 
 <script type="module">
-import * as T3 from "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.min.js";
+import * as T3 from "./three.module.js";
 const THREE=Object.assign({},T3);
 /* Compatibilita' Three.js recente (r186) con l'aspetto della vecchia r128.
    Viene eseguito PRIMA del gioco, dentro lo script "module" che carica la libreria.
