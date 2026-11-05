@@ -1,0 +1,41 @@
+{
+  "id": "/smokestack-symphony/beta/",
+  "name": "Smokestack Symphony (beta)",
+  "short_name": "Smokestack β",
+  "description": "Strategia in tempo reale dieselpunk: cinque razze, ciminiere, magma e fanghi tossici.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#14110f",
+  "theme_color": "#14110f",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
