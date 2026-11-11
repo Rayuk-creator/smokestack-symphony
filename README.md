@@ -22,7 +22,8 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Modalità**: *Gioca* (tu contro il computer) oppure *Osserva* (il computer contro sé stesso).
 - **Difficoltà**: Facile, Normale, Difficile.
 - **Avversario**: scegli la razza oppure lascia "a caso".
-- **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con ponti e passerelle in posizioni sempre diverse.
+- **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con due ponti in posizioni sempre diverse. All'inizio i ponti sono chiusi da un blocco (una frana o lava solidificata): per passare va distrutto.
+- **Mostri**: in ogni partita due mostri neutrali pattugliano una zona del campo. Non attaccano mai le basi; chi fa più danno a un mostro quando cade riceve 300 della propria risorsa principale.
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
 - La base ha due livelli. La popolazione massima è 55.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
@@ -34,7 +35,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 
 **Tiratori**: da fermi sparano solo a chi hanno a tiro e non inseguono; se li colpiscono da fuori tiro si avvicinano. Per farli inseguire, ordina di attaccare un nemico. Nei gruppi misti il corpo a corpo va davanti. I tasti **Tiratori** e **Mischia** selezionano tutte le unità di quel tipo.
 
-### Le cinque razze
+### Le sei razze
 | Razza | Chi sono | Risorse | Élite |
 |---|---|---|---|
 | **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator |
@@ -42,6 +43,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 | **Vaelrith** | Elfi oscuri, setta steampunk che prega | Oro e preghiere | The Sealed |
 | **Scrappers** | Goblin rottamai chimici | Rottami e fanghi tossici | Krankenstein |
 | **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō |
+| **Cogborn** | Automi fuggiti dai nani, si riparano tra loro | Lega antica ed Etere | Automa Engine |
 
 ### Se il gioco va a scatti
 Nel menu di pausa trovi **Qualità grafica** (Alta, Media, Bassa). Il gioco la sceglie da solo e la abbassa se serve. Con **Info prestazioni** → *Copia i dati* puoi mandarci i numeri del tuo dispositivo: ci aiutano molto.
@@ -65,7 +67,8 @@ You start with your main base and five workers already gathering. Collect your r
 - **Mode**: *Play* (you against the computer) or *Watch* (computer against computer).
 - **Difficulty**: Easy, Normal, Hard.
 - **Opponent**: pick a race or leave it random.
-- **Map**: different every game. The river can be toxic sludge, lava or water, with bridges and walkways in new places each time.
+- **Map**: different every game. The river can be toxic sludge, lava or water, with two bridges in new places each time. At the start the bridges are closed by a blockage (a rockslide or solidified lava): destroy it to get through.
+- **Monsters**: every game two neutral monsters patrol an area of the field. They never attack bases; whoever deals the most damage to a monster when it falls gets 300 of their main resource.
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
 - Bases have two levels. Population cap is 55.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
@@ -75,7 +78,7 @@ You start with your main base and five workers already gathering. Collect your r
 
 **Phone and tablet**: tap to select, double-tap to select all units of the same type. Tap an enemy, a resource node or the ground to give orders. Drag to move the camera, pinch to zoom. With workers selected, tap another worker to add it. To build, tap a green area and then **Confirm**.
 
-### The five races
+### The six races
 | Race | Who they are | Resources | Elite |
 |---|---|---|---|
 | **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator |
@@ -83,6 +86,7 @@ You start with your main base and five workers already gathering. Collect your r
 | **Vaelrith** | Dark elves, a praying steampunk sect | Gold and prayers | The Sealed |
 | **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein |
 | **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō |
+| **Cogborn** | Automatons that escaped the dwarves and repair each other | Ancient Alloy and Ether | Engine Automaton |
 
 ### If the game stutters
 The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
