@@ -24,6 +24,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Avversario**: scegli la razza oppure lascia "a caso".
 - **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con due ponti in posizioni sempre diverse. All'inizio i ponti sono chiusi da un blocco (una frana o lava solidificata): per passare va distrutto.
 - **Mostri**: in ogni partita due mostri neutrali pattugliano una zona del campo. Non attaccano mai le basi; chi fa più danno a un mostro quando cade riceve 300 della propria risorsa principale.
+- **Giorno e notte**: 5 minuti di giorno e 3 di notte. Al calare della notte i mostri del giorno si ritirano e compaiono quelli notturni (Orso delle caverne o Ragno gigante); chi si ritira torna al ciclo dopo con la vita che gli restava, chi muore resta morto.
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
 - La base ha due livelli. La popolazione massima è 55.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
@@ -69,6 +70,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Opponent**: pick a race or leave it random.
 - **Map**: different every game. The river can be toxic sludge, lava or water, with two bridges in new places each time. At the start the bridges are closed by a blockage (a rockslide or solidified lava): destroy it to get through.
 - **Monsters**: every game two neutral monsters patrol an area of the field. They never attack bases; whoever deals the most damage to a monster when it falls gets 300 of their main resource.
+- **Day and night**: 5 minutes of day and 3 of night. At nightfall the day monsters withdraw and the night ones appear (Cave Bear or Giant Spider); a monster that withdraws comes back next cycle with the health it had left, a dead one stays dead.
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
 - Bases have two levels. Population cap is 55.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
