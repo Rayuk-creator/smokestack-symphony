@@ -80,6 +80,8 @@ You start with your main base and five workers already gathering. Collect your r
 
 **Phone and tablet**: tap to select, double-tap to select all units of the same type. Tap an enemy, a resource node or the ground to give orders. Drag to move the camera, pinch to zoom. With workers selected, tap another worker to add it. To build, tap a green area and then **Confirm**.
 
+**Ranged units**: when standing still they only fire at enemies in range and don't chase; if hit from out of range they move closer. To make them chase, order them to attack an enemy. In mixed groups, melee units go in front. The **Ranged** and **Melee** buttons select all units of that kind.
+
 ### The six races
 | Race | Who they are | Resources | Elite |
 |---|---|---|---|
