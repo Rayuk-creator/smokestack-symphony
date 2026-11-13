@@ -22,7 +22,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Modalità**: *Gioca* (tu contro il computer) oppure *Osserva* (il computer contro sé stesso).
 - **Difficoltà**: Facile, Normale, Difficile.
 - **Avversario**: scegli la razza oppure lascia "a caso".
-- **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con due ponti in posizioni sempre diverse. All'inizio i ponti sono chiusi da un blocco (una frana o lava solidificata): per passare va distrutto.
+- **Mappa**: cambia a ogni partita. Il fiume può essere di fanghi tossici, di lava o d'acqua, con due ponti in posizioni sempre diverse. All'inizio i ponti sono chiusi da un blocco (una frana o lava solidificata): per passare va distrutto. Anche le basi cambiano posto: al centro del bordo o in un angolo (sempre opposte in diagonale), su un'altura con la sua rampa oppure in pianura, a volte tra gli alberi o accanto a un vulcano.
 - **Mostri**: in ogni partita due mostri neutrali pattugliano una zona del campo. Non attaccano mai le basi; chi fa più danno a un mostro quando cade riceve 300 della propria risorsa principale.
 - **Giorno e notte**: 5 minuti di giorno e 3 di notte. Al calare della notte i mostri del giorno si ritirano e compaiono quelli notturni (Orso delle caverne o Ragno gigante); chi si ritira torna al ciclo dopo con la vita che gli restava, chi muore resta morto.
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
@@ -68,7 +68,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Mode**: *Play* (you against the computer) or *Watch* (computer against computer).
 - **Difficulty**: Easy, Normal, Hard.
 - **Opponent**: pick a race or leave it random.
-- **Map**: different every game. The river can be toxic sludge, lava or water, with two bridges in new places each time. At the start the bridges are closed by a blockage (a rockslide or solidified lava): destroy it to get through.
+- **Map**: different every game. The river can be toxic sludge, lava or water, with two bridges in new places each time. At the start the bridges are closed by a blockage (a rockslide or solidified lava): destroy it to get through. Bases move too: at the middle of the edge or in a corner (always diagonally opposite), on high ground with its own ramp or down in the plain, sometimes among trees or next to a volcano.
 - **Monsters**: every game two neutral monsters patrol an area of the field. They never attack bases; whoever deals the most damage to a monster when it falls gets 300 of their main resource.
 - **Day and night**: 5 minutes of day and 3 of night. At nightfall the day monsters withdraw and the night ones appear (Cave Bear or Giant Spider); a monster that withdraws comes back next cycle with the health it had left, a dead one stays dead.
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
