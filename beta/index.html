@@ -371,6 +371,9 @@ const EN={
   'Casuale':'Random','Una delle altre tre razze, estratta a ogni partita':'One of the other three races, drawn at random each match',
   'Automatica':'Automatic','sceglie da sola':'adjusts itself','tutti gli effetti':'all effects','meno sfocatura e luci':'less blur, fewer lights','per tablet deboli':'for low-end tablets',
   'Dati copiati: incollali nella chat.':'Data copied to the clipboard.',
+  'Grafica ripristinata.':'Graphics restored.',
+  'La grafica del dispositivo non riparte: se resta vuota, ricarica la pagina.':'The device graphics did not come back: if the screen stays empty, reload the page.',
+  'Grafica persa: {0} volte · restituita: {1} · ricreata: {2} · non riuscita: {3}':'Graphics lost: {0} times · returned: {1} · recreated: {2} · failed: {3}',
   /* pannello prestazioni */
   'Scheda grafica: {0}':'Graphics card: {0}','Schermo: {0} x {1} (densita\' {2})':'Screen: {0} x {1} (pixel ratio {2})','Disegno a: {0} x {1} pixel ({2}%)':'Rendering at: {0} x {1} pixels ({2}%)',
   'Qualita\': {0}':'Quality: {0}',' (automatica)':' (automatic)',' (automatica, abbassata {0} volte)':' (automatic, lowered {0} times)',' (scelta a mano)':' (set manually)',
@@ -3077,9 +3080,12 @@ let ME=0;function tci(t){return t===0||t===1?t^ME:t;}
 const fmt=n=>Math.floor(n);
 
 /* ---------- renderer ---------- */
-const canvas=$('#game');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
-renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.LinearSRGBColorSpace;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
+/* 15 novembre: canvas e renderer sono `let` perche' se il telefono si riprende la grafica (chiamata, app in secondo piano) e non la restituisce
+   il gioco crea un canvas nuovo e un renderer nuovo (glRebuild in ui.js). */
+let canvas=$('#game');
+function makeRenderer(c){const r=new THREE.WebGLRenderer({canvas:c,antialias:false,powerPreference:'high-performance'});
+  r.setPixelRatio(1);r.outputColorSpace=THREE.LinearSRGBColorSpace;r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFShadowMap;return r;}
+let renderer=makeRenderer(canvas);
 const DPR=Math.min(window.devicePixelRatio||1,2);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x6a7068);scene.fog=new THREE.FogExp2(0x8a8070,.009);
 const camera=new THREE.PerspectiveCamera(30,1,.5,400);
@@ -4279,11 +4285,13 @@ function updateGhost(cx,cy){if(!placing){ghost.visible=false;return;}const p=gro
 const ptrs=new Map();let gesture=null,boxMode=false,lastTap={t:0,e:null};
 const boxEl=$('#box');
 function worldPerPx(){return 2*cam.dist*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/innerHeight;}
-canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+/* ascoltatori del canvas del gioco: registrati qui, cosi' se il canvas viene ricreato (glRebuild) passano a quello nuovo */
+const GL_LISTEN=[];function onGL(type,fn,opt){GL_LISTEN.push([type,fn,opt]);canvas.addEventListener(type,fn,opt);}
+onGL('contextmenu',e=>e.preventDefault());
+onGL('pointerdown',e=>{try{canvas.setPointerCapture(e.pointerId);}catch(_){}
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,btn:e.button,type:e.pointerType,shift:e.shiftKey});
   if(ptrs.size===2){const a=[...ptrs.values()];gesture={kind:'pinch',d0:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),dist0:cam.dist};boxEl.hidden=true;}else if(ptrs.size===1)gesture={kind:'pending'};});
-canvas.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);
+onGL('pointermove',e=>{const p=ptrs.get(e.pointerId);
   if(!p){if(e.pointerType==='mouse'&&gameOn&&!ended){if(placing){updateGhost(e.clientX,e.clientY);return;}hoverEnt=pickEnt(e.clientX,e.clientY,x=>!x.isN);canvas.style.cursor=hoverEnt&&(hoverEnt.team===1-ME||hoverEnt.isX)&&ownUnitsSel().length?'crosshair':hoverEnt?'pointer':'default';}return;}
   if(!gesture)return;const px=p.x,py=p.y;p.x=e.clientX;p.y=e.clientY;
   if(gesture.kind==='pinch'){const a=[...ptrs.values()];if(a.length<2)return;const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);cam.dist=Math.max(18,Math.min(95,gesture.dist0*gesture.d0/Math.max(1,d)));return;}
@@ -4316,9 +4324,9 @@ function endPointer(e){const p=ptrs.get(e.pointerId);if(!p)return;ptrs.delete(e.
     const army=list.filter(u=>!u.T.worker&&!u.T.pray);if(list.length)setSel(army.length?army:list,p.shift);boxEl.hidden=true;if(boxMode){boxMode=false;setBoxUI();}}
   else if(gesture.kind==='pending'){if(p.type==='mouse'&&p.btn===2){if(placing)cancelPlacing();else order(p.x,p.y);}else if(p.type!=='mouse'||p.btn===0)tapAt(p);}
   gesture=ptrs.size?{kind:'none'}:null;}
-canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);gesture=null;boxEl.hidden=true;});
-canvas.addEventListener('pointerleave',()=>{hoverEnt=null;});
-canvas.addEventListener('wheel',e=>{e.preventDefault();cam.dist=Math.max(18,Math.min(95,cam.dist*(1+e.deltaY*.001)));},{passive:false});
+onGL('pointerup',endPointer);onGL('pointercancel',e=>{ptrs.delete(e.pointerId);gesture=null;boxEl.hidden=true;});
+onGL('pointerleave',()=>{hoverEnt=null;});
+onGL('wheel',e=>{e.preventDefault();cam.dist=Math.max(18,Math.min(95,cam.dist*(1+e.deltaY*.001)));},{passive:false});
 const keys=new Set();
 addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))return;keys.add(e.key.toLowerCase());
   if(e.key==='Escape'){if(placing)cancelPlacing();else setSel([],false);}
@@ -4527,7 +4535,25 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   updateLightPool(rdt);shadowTick();CONTACT.update(scene,rdt);
   const tL1=performance.now();render();const tL2=performance.now();PERF.logic+=(tL1-tL0-PERF.logic)*.05;PERF.draw+=(tL2-tL1-PERF.draw)*.05;
   perfT-=rdt;if(perfT<=0){perfT=.5;if(showFps&&gameOn)fpsBox();if(!$('#perf').hidden)perfInfo();}
-  requestAnimationFrame(frame);}
+  glTick();requestAnimationFrame(frame);}
+/* ---------- grafica persa (15 novembre, segnalazione dell'utente) ----------
+   Durante una chiamata sul telefono Android la partita in multiplayer si e' riallineata ma il disegno e' rimasto vuoto (si vedeva lo sfondo
+   della pagina): il telefono si era ripreso la grafica (WebGL "context lost") e non l'ha restituita. Se la restituisce, Three.js ricarica tutto
+   da solo (provato con WEBGL_lose_context). Se 2,5 s dopo che il gioco e' tornato visibile la grafica e' ancora persa, si crea un canvas nuovo
+   con un renderer nuovo (glRebuild): la partita non viene toccata, cambiano solo i disegni sullo schermo. Se il browser rifiuta anche quello,
+   si riprova ogni 7,5 s e un messaggio dice di ricaricare la pagina. I conti stanno nel pannello Prestazioni. */
+const GLW={lost:0,rest:0,rebuilt:0,fail:0,lostAt:0,visAt:0};
+function glWatch(c){c.addEventListener('webglcontextlost',e=>{e.preventDefault();GLW.lost++;GLW.lostAt=performance.now();GLW.visAt=0;},false);
+  c.addEventListener('webglcontextrestored',()=>{GLW.rest++;GLW.lostAt=0;GLW.visAt=0;selDirty=true;miniT=0;},false);}/* restituita: Three.js ricarica tutto da solo */
+function glAfter(){scene.traverse(o=>{if(o.isLight&&o.shadow&&o.shadow.map)o.shadow.map=null;});applyQuality();selDirty=true;miniT=0;}
+function glRebuild(){const t=performance.now();GLW.lostAt=0;GLW.visAt=0;
+  try{const old=canvas,nc=old.cloneNode(false);old.replaceWith(nc);canvas=nc;for(const [ty,f,o] of GL_LISTEN)nc.addEventListener(ty,f,o);
+    try{renderer.dispose();}catch(e){}renderer=makeRenderer(nc);glWatch(nc);
+    if(renderer.getContext().isContextLost())throw new Error('contesto perso');
+    glAfter();GLW.rebuilt++;toast(LT('Grafica ripristinata.'));}
+  catch(e){GLW.fail++;GLW.lostAt=t;GLW.visAt=t+5000;toast(LT('La grafica del dispositivo non riparte: se resta vuota, ricarica la pagina.'));}}
+function glTick(){if(!GLW.lostAt||document.hidden)return;const t=performance.now();if(!GLW.visAt)GLW.visAt=t;if(t-GLW.visAt>2500)glRebuild();}
+if(canvas.addEventListener)glWatch(canvas);if(document.addEventListener)document.addEventListener('visibilitychange',()=>{GLW.visAt=0;});
 /* ---------- pannello prestazioni ---------- */
 function fpsNow(){const a=PERF.ft;if(!a.length)return [0,0,0];let t=0,slow=0,worst=0;for(const x of a){t+=x;if(x>1/28)slow++;if(x>worst)worst=x;}return [a.length/t,slow/a.length,worst];}
 function fpsBox(){const [f]=fpsNow();const e=$('#fpsBox');e.hidden=false;e.textContent=Math.round(f)+' FPS · '+QLV[qLevel].name;}
@@ -4537,7 +4563,8 @@ function perfText(){const [f,slow,worst]=fpsNow();let pt=0;scene.traverse(o=>{if
     LTf('FPS: {0} · scatti: {1}% dei fotogrammi · peggiore: {2} ms',Math.round(f),Math.round(slow*100),Math.round(worst*1000)),
     LTf('Calcolo del gioco: {0} ms · invio del disegno: {1} ms',PERF.logic.toFixed(1),PERF.draw.toFixed(1)),
     LTf('Disegni per fotogramma: {0} · triangoli: {1} mila',PERF.calls,Math.round(PERF.tris/1000)),LPOOL?LTf('Luci colorate: {0} di {1}',LPOOL.length,pt):LTf('Luci colorate: {0} tutte',pt),
-    LTf('Unita\' in campo: {0} · edifici: {1}',units.length,blds.length)].join('\n');}
+    LTf('Unita\' in campo: {0} · edifici: {1}',units.length,blds.length),
+    LTf('Grafica persa: {0} volte · restituita: {1} · ricreata: {2} · non riuscita: {3}',GLW.lost,GLW.rest,GLW.rebuilt,GLW.fail)].join('\n');}
 function perfInfo(){$('#perfText').textContent=perfText();}
 function renderQuality(){const o=[['auto',LT('Automatica'),LT('sceglie da sola')],['alta',QLV.alta.name,LT('tutti gli effetti')],['media',QLV.media.name,LT('meno sfocatura e luci')],['bassa',QLV.bassa.name,LT('per tablet deboli')]];
   const h=o.map(([k,n,i])=>'<button type="button" class="chip" style="--rc:var(--brass)" data-q="'+k+'" aria-pressed="'+(qPref===k)+'"><span class="rn">'+n+'</span><span class="ra">'+i+'</span></button>').join('');
