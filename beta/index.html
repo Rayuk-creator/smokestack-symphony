@@ -412,7 +412,7 @@ const EN={
   'Il codice ha 5 lettere.':'The code has 5 letters.','Mi collego…':'Connecting…','Nessuna partita con questo codice.':'No match with this code.',
   "Collegato! Premi «Inizia insieme»: valgono le razze scelte nella schermata iniziale (la tua e quella dell'avversario).":"Connected! Press “Start together”: the races chosen on the start screen are used (yours and the opponent's).",
   "Collegato! Aspetta che l'host faccia partire la partita.":'Connected! Wait for the host to start the match.','Questa partita ha già due giocatori.':'This match already has two players.',
-  'Attenzione: le due partite non sono più uguali':'Warning: the two games are no longer in sync','L’altro giocatore è uscito: al suo posto gioca l’IA':'The other player left: the AI takes their place',
+  'Partite riallineate':'Games back in sync','L’altro giocatore è uscito: al suo posto gioca l’IA':'The other player left: the AI takes their place',
   'Giocatore 2 in background':'Player 2 is in the background','Host in background':'Host is in the background','Giocatore 2 non risponde':'Player 2 is not responding',"L'host non risponde":'The host is not responding',
   'La partita è in pausa per tutti e due finché non torna.':'The match is paused for both players until they come back.','La partita è in pausa per tutti e due. Provo a ricollegarmi…':'The match is paused for both players. Trying to reconnect…',
   'Collegamento chiuso.':'Connection closed.',"Aspetto che anche l'altro dispositivo abbia preparato la mappa.":'Waiting for the other device to finish preparing the map.'
@@ -1604,7 +1604,7 @@ function roofGeo(w,h,d){const s=new THREE.Shape();s.moveTo(-w/2,0);s.lineTo(w/2,
   const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*.35,uv.getY(i)*.35);return g;}
 function glowPlane(c,mult,w,h){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:nearest(new THREE.CanvasTexture(c)),color:new THREE.Color(mult,mult,mult),transparent:true,alphaTest:.5}));return m;}
 const winC=k=>canv('win'+k,(g,w,h)=>paintWindow(g,w,h,k),16,24);
-function banner(team,race,w,h){const c=canv('ban'+team+race,(g)=>paintBanner(g,TEAMCOL[team],race),16,32);return new THREE.Mesh(new THREE.PlaneGeometry(w||.8,h||1.6),new THREE.MeshPhongMaterial({map:nearest(new THREE.CanvasTexture(c)),side:THREE.DoubleSide,alphaTest:.5,specular:0,shininess:0}));}
+function banner(team,race,w,h){const c=canv('ban'+tci(team)+race,(g)=>paintBanner(g,TEAMCOL[tci(team)],race),16,32);return new THREE.Mesh(new THREE.PlaneGeometry(w||.8,h||1.6),new THREE.MeshPhongMaterial({map:nearest(new THREE.CanvasTexture(c)),side:THREE.DoubleSide,alphaTest:.5,specular:0,shininess:0}));}
 
 /* ---------- edifici per razza ---------- */
 function B(){return{G:new THREE.Group(),r:2,smoke:[],spin:[],lights:[],bob:[]};}
@@ -2998,7 +2998,7 @@ if(typeof TYPES!=='undefined')['raccatta','teppista','lanciabarattoli','gasatore
 const EXTBLDIMG={};if(typeof Image!=="undefined")for(const k in EXTBLD)for(const lv of [1,2]){const s=lv===1?EXTBLD[k].src:EXTBLD[k]['lv'+lv];if(!s)continue;const im=new Image();im.src=s;EXTBLDIMG[k+'|'+lv]=im;}
 const BLDTEX={};
 function extTex(key,team,lv){const D=EXTBLD[key],im=EXTBLDIMG[key+'|'+lv];if(!D||!im||!im.complete||!im.naturalWidth)return null;
-  const ck=key+'|'+team+'|'+lv;let tex=BLDTEX[ck];if(!tex){const c=mkCanvas(im.width,im.height),g=c.getContext('2d');g.drawImage(im,0,0);teamTint(g,0,im.width,im.height,ramp(TEAMCOL[team]));
+  const ck=key+'|'+tci(team)+'|'+lv;let tex=BLDTEX[ck];if(!tex){const c=mkCanvas(im.width,im.height),g=c.getContext('2d');g.drawImage(im,0,0);teamTint(g,0,im.width,im.height,ramp(TEAMCOL[tci(team)]));
     tex=nearest(new THREE.CanvasTexture(c));tex.repeat.set(1/D.n,1);tex.userData={n:D.n};BLDTEX[ck]=tex;}return tex;}
 function extBuilding(key,team){const D=EXTBLD[key];const tex=D&&extTex(key,team,1);if(!tex)return null;
   const m=B();const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,alphaTest:.5}));sp.center.set(.5,D.cy);sp.scale.set(D.w,D.w,1);sp.position.z=D.dz;m.G.add(animate(sp));
@@ -3071,6 +3071,9 @@ const $=s=>document.querySelector(s);
 const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse=matchMedia('(pointer: coarse)').matches;
 const TEAMCOL=['#e8b04a','#e0503e'];
+/* 15 novembre (multigiocatore): il colore si sceglie da chi guarda. Ognuno si vede oro (TEAMCOL[0]) e vede l'altro rosso, come da solo.
+   Da solo ME=0, quindi nulla cambia; nella partita insieme, sull'ospite (ME=1) i due colori si scambiano. Solo aspetto: le regole non lo vedono. */
+let ME=0;function tci(t){return t===0||t===1?t^ME:t;}
 const fmt=n=>Math.floor(n);
 
 /* ---------- renderer ---------- */
@@ -3131,12 +3134,12 @@ function updateFireflies(t){for(let i=0;i<FF;i++){const s=fSeed[i];fPos[i*3]=s[0
 /* ---------- sprite delle unita' ---------- */
 const sheetCache={};
 function spx(T){return T.px||(T.big?64:48);}
-function sheet(kind,team){const key=kind+team;if(sheetCache[key])return sheetCache[key];const T=TYPES[kind],P=spx(T);const c=mkCanvas(P*FR,P),g=c.getContext('2d');const TM=ramp(TEAMCOL[team]);
+function sheet(kind,team){const key=kind+tci(team);if(sheetCache[key])return sheetCache[key];const T=TYPES[kind],P=spx(T);const c=mkCanvas(P*FR,P),g=c.getContext('2d');const TM=ramp(TEAMCOL[tci(team)]);
   const XI=EXTIMG[kind];if(XI&&XI.complete&&XI.naturalWidth){extFrames(g,XI,P,T.mon?null:TM);return sheetCache[key]=c;}
   for(let f=0;f<FR;f++){const p=new Painter(P,P);DRAW[kind](p,pose(f),TM);p.render(g,f*P,0);}return sheetCache[key]=c;}
-function sheetBack(kind,team){const key='b|'+kind+team;if(sheetCache[key])return sheetCache[key];const XI=EXTBIMG[kind];if(!(XI&&XI.complete&&XI.naturalWidth))return null;const P=spx(TYPES[kind]);const c=mkCanvas(P*FR,P),g=c.getContext('2d');extFrames(g,XI,P,TYPES[kind].mon?null:ramp(TEAMCOL[team]));return sheetCache[key]=c;}
+function sheetBack(kind,team){const key='b|'+kind+tci(team);if(sheetCache[key])return sheetCache[key];const XI=EXTBIMG[kind];if(!(XI&&XI.complete&&XI.naturalWidth))return null;const P=spx(TYPES[kind]);const c=mkCanvas(P*FR,P),g=c.getContext('2d');extFrames(g,XI,P,TYPES[kind].mon?null:ramp(TEAMCOL[tci(team)]));return sheetCache[key]=c;}
 const iconCache={};
-function icon(kind,team){const key=kind+(team||0);if(iconCache[key])return iconCache[key];const P=spx(TYPES[kind]);const c=mkCanvas(P,P);c.getContext('2d').drawImage(sheet(kind,team||0),0,0,P,P,0,0,P,P);return iconCache[key]=c.toDataURL();}
+function icon(kind,team){const key=kind+tci(team||0);if(iconCache[key])return iconCache[key];const P=spx(TYPES[kind]);const c=mkCanvas(P,P);c.getContext('2d').drawImage(sheet(kind,team||0),0,0,P,P,0,0,P,P);return iconCache[key]=c.toDataURL();}
 /* APPOGGIO A TERRA: righe vuote sotto il disegno (il piu' basso fra gli 8 fotogrammi), come frazione della tela.
    Lo sprite si aggancia li', cosi' cingoli e ruote toccano il terreno (prima: centro fisso .02 -> il Mortaio volava). */
 function sheetFoot(c,P){if(!c||c.__ft!==undefined)return c?c.__ft:.02;let ft=.02;
@@ -3162,8 +3165,10 @@ function viewTeam(){return picks.mode==='watch'?-1:ME;}
    generatore con lo stesso seme sui due dispositivi, mentre la grafica (fumo, scintille, varianti dei disegni) resta su Math.random.
    Ogni ordine del giocatore passa da cmd(): da soli si esegue subito (come prima), insieme va all'altro dispositivo e tutti e due
    lo eseguono allo stesso passo (vedi rete.js). Le cose del gioco viaggiano col loro numero (id), mai come oggetti. */
-let ME=0,GRNG=null;
+let GRNG=null;/* ME e' dichiarato in cima, accanto a TEAMCOL */
 function GR(){return GRNG?GRNG():Math.random();}
+/* stesso generatore di rng(), ma con lo stato leggibile (f.s): serve a copiare la partita dall'host all'altro dispositivo */
+function rngS(seed){const f=function(){let s=f.s|0;s=s+0x6D2B79F5|0;f.s=s;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};f.s=seed;return f;}
 const LOCK={on:false,pend:[]};
 function entById(id){for(const a of [units,blds,nodes,typeof BLKS!=='undefined'?BLKS:[]])for(const e of a)if(e.id===id)return e;return null;}
 function entPack(v){if(v&&typeof v==='object'&&typeof v.id==='number'&&(v.isB||v.isN||v.T))return{$:v.id};if(v&&typeof v==='object'&&!Array.isArray(v)){const o={};for(const k in v)o[k]=entPack(v[k]);return o;}return v;}
@@ -3354,7 +3359,7 @@ function spawnUnit(key,team,x,z){const T=TYPES[key],tm=teams[team];
   const P0=spx(T),ftF=sheetFoot(sheet(key,team),P0),ftB=texB?sheetFoot(sheetBack(key,team),P0):ftF;
   const S=uScale(T);const sp=new THREE.Sprite(mat);sp.center.set(.5,ftF);sp.scale.set(S,S,1);sp.position.set(x,gy(x,z),z);scene.add(sp);
   const sh=blob(scene,x,0,z,T.big?2.6:1.35);
-  const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:TEAMCOL[team],transparent:true,opacity:.3,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,.05,z);const rs=T.big?1.7:T.worker?.85:1;ring.scale.set(rs,rs,1);ring.userData.s=rs;scene.add(ring);
+  const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:TEAMCOL[tci(team)],transparent:true,opacity:.3,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,.05,z);const rs=T.big?1.7:T.worker?.85:1;ring.scale.set(rs,rs,1);ring.userData.s=rs;scene.add(ring);
   const [bg,fg]=barPair();
   const hp=T.hp*tm.mods.hp;
   const u={id:uid++,key,T,team,pos:new THREE.Vector3(x,0,z),sp,mat,tex,texB,ftF,ftB,back:false,sh,ring,bg,fg,hp,maxhp:hp,order:null,target:null,cd:GR()*.4,anim:GR()*2,face:team===0?1:-1,
@@ -3365,7 +3370,7 @@ function spawnBuilding(key,team,x,z,built){const T=BT[key];const m=extBuilding(k
   DRESS[T.race](G,T.r);blob(G,0,0,0,T.r*2.4,T.r*2,.45);m.spin.forEach(s=>animate(s[0]));m.bob.forEach(o=>animate(o));bakeGroup(G);
   G.position.set(x,gy(x,z),z);scene.add(G);
   let top=T.r*1.4+1.5;try{const bx=new THREE.Box3().setFromObject(G);if(isFinite(bx.max.y)&&bx.max.y>1)top=Math.min(bx.max.y+.6,9);}catch(e){}if(m.spriteTop)top=m.spriteTop;
-  const ring=new THREE.Mesh(new THREE.RingGeometry(T.r+.2,T.r+.45,40),new THREE.MeshBasicMaterial({color:TEAMCOL[team],transparent:true,opacity:.9,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,gy(x,z)+.06,z);ring.visible=false;scene.add(ring);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(T.r+.2,T.r+.45,40),new THREE.MeshBasicMaterial({color:TEAMCOL[tci(team)],transparent:true,opacity:.9,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,gy(x,z)+.06,z);ring.visible=false;scene.add(ring);
   const [bg,fg]=barPair();
   const b={isB:true,id:uid++,key,T,team,pos:new THREE.Vector3(x,0,z),r:T.r,cr:CR,hp:built?T.hp:T.hp*.1,maxhp:T.hp,built,prog:built?1:0,G,m,ring,bg,fg,top,queue:[],rally:null,cd:0,dead:false,revealUntil:-99,hitFlash:0,
     smoke:m.smoke.map(s=>Object.assign({},s,{pos:s.pos.clone().add(new THREE.Vector3(x,0,z))}))};
@@ -3767,7 +3772,7 @@ function clearWorld(){units.forEach(removeUnit);if(typeof MONS!=='undefined')MON
 function scorchClear(){scene.children.filter(o=>o.isMesh&&o.geometry===shadowGeo&&o.material.color&&o.material.color.getHex&&o.material.color.getHex()===0x0a0806).forEach(o=>scene.remove(o));}
 function startGame(){clearWorld();rollFoe();if(mapUsed||picks.seed!=null)newMap(picks.seed);else if(MAPCHK&&freeBridges(true))newMap(MG.seed);MAPCHK=false;mapUsed=true;rollLayout();now=0;ended=false;endTimer=-1;
   /* partita insieme (picks.net): due giocatori, nessuna IA, numeri casuali delle regole col seme comune, numeri delle cose da 0 */
-  const NETG=!!picks.net;ME=NETG?picks.net.me:0;GRNG=NETG?rng(picks.seed*13+7):null;if(NETG)uid=0;else LOCK.on=false;
+  const NETG=!!picks.net;ME=NETG?picks.net.me:0;GRNG=NETG?rngS(picks.seed*13+7):null;if(NETG)uid=0;else LOCK.on=false;
   teams=[makeTeam(0,picks.me,picks.mode==='watch'),makeTeam(1,foeRace,!NETG)];if(picks.mode==='play'&&!NETG){const D=DIFF[picks.diff]||DIFF.normal;Object.assign(teams[1],{eco:D.eco,think:D.think,wave0:D.wave0,waveInc:D.waveInc,atk:D.atk,elMax:D.elMax,elT:D.elT});}
   [0,1].forEach(t=>{const race=teams[t].race;const hp=L2W(t,0,0);spawnBuilding(RACE_B[race][0],t,hp.x,hp.z,true);
     const kind=RACES[race].node;BASE_NODES.forEach(([lx,lz])=>{const w=L2W(t,lx,lz);spawnNode(kind,w.x,w.z,1400);});});
@@ -3790,7 +3795,7 @@ function finish(){ended=true;const w=teams.find(t=>!t.lost);const secs=Math.roun
   $('#endEyebrow').textContent=LTf('{0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name)+' · '+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
   $('#endText').textContent=LT(picks.mode==='watch'?'Partita tra due IA conclusa: confronta i numeri qui sotto per valutare il bilanciamento.':meWin?'La base nemica è caduta.':'La tua base è caduta.');
   const row=(lab,f)=>'<tr><th scope="row">'+LT(lab)+'</th>'+teams.map(t=>'<td>'+f(t)+'</td>').join('')+'</tr>';
-  $('#endStats').innerHTML='<table><thead><tr><th></th>'+teams.map((t,i)=>'<th scope="col"><i class="dot" style="background:'+TEAMCOL[i]+'"></i>'+RACES[t.race].name+'</th>').join('')+'</tr></thead><tbody>'+
+  $('#endStats').innerHTML='<table><thead><tr><th></th>'+teams.map((t,i)=>'<th scope="col"><i class="dot" style="background:'+TEAMCOL[tci(i)]+'"></i>'+RACES[t.race].name+'</th>').join('')+'</tr></thead><tbody>'+
     row('Risorse raccolte',t=>fmt(t.stats.gath))+row('Unità prodotte',t=>t.stats.made)+row('Unità perse',t=>t.stats.lost)+row('Nemici eliminati',t=>t.stats.killed)+row('Edifici persi',t=>t.stats.bLost)+row('Livello raggiunto',t=>t.level)+'</tbody></table>';
   $('#end').hidden=false;$('#bottom').hidden=true;window.__lastResult={winner:w?w.race:null,winTeam:w?w.id:-1,time:now,stats:teams.map(t=>({race:t.race,...t.stats,level:t.level}))};}
 
@@ -3990,9 +3995,11 @@ function blkDraw(b,lava){if(typeof Image==='undefined')return;const G=new THREE.
 function blkClear(){BLKS.forEach(b=>{if(b.G)scene.remove(b.G);});BLKS=[];}
 function killBlock(b){if(b.dead)return;b.dead=true;selection.delete(b);selDirty=true;b.deadT=now;
   if(typeof Image!=='undefined')for(let k=0;k<14;k++)spawnFx(k%2?'puff':'boom',b.pos.x+(Math.random()-.5)*3.6,.4+Math.random()*1.6,b.pos.z+(Math.random()-.5)*2.2,k%2?0x6e655d:(b.key==='lavablocco'?0xffa040:0x9a8a70));
-  if(b.G){if(!pxObj(b.G,b.key+'_macerie',0,1.3,BLK.w,2.6)){b.G.scale.set(1,.3,1);b.G.traverse(o=>{if(o.material&&o.material.color)o.material.color.multiplyScalar(.6);});}else b.G.children.slice(0,-1).forEach(o=>{o.visible=false;});}
+  blkWreck(b);
   rebuildGrid();units.forEach(u=>{u.path=null;});
   if(picks.mode==='play'&&(tvSeesXZ(0,b.pos.x,b.pos.z)))toast(LT('Un passaggio sul fiume è stato aperto.'));}
+/* disegno delle macerie (anche quando la partita viene copiata dall'host) */
+function blkWreck(b){if(b.G){if(!pxObj(b.G,b.key+'_macerie',0,1.3,BLK.w,2.6)){b.G.scale.set(1,.3,1);b.G.traverse(o=>{if(o.material&&o.material.color)o.material.color.multiplyScalar(.6);});}else b.G.children.slice(0,-1).forEach(o=>{o.visible=false;});}}
 /* IA: quale blocco rompere all'ondata (null = nessuno) */
 function aiBlockPick(home,tgt){const live=BLKS.filter(b=>!b.dead);if(!live.length)return null;const via=(x,z)=>Math.hypot(home.x-x,home.z-z)+Math.hypot(tgt.pos.x-x,tgt.pos.z-z);
   const shut=new Set(live.map(b=>b.pos.x));let open=Infinity;for(const cx of CROSS.bridges.concat(CROSS.fords))if(!shut.has(cx))open=Math.min(open,via(cx,riverZ(cx)));
@@ -4133,7 +4140,7 @@ function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Mat
   const vt=viewTeam();const vis=fogShown(vt,u);u.sp.visible=u.sh.visible=vis;u.ring.visible=vis&&(selection.has(u)||u===hoverEnt);
   if(u.T.stealth){u.mat.opacity=now<u.revealUntil?1:(u.team===vt||vt<0?.55:.6);}
   const sel=selection.has(u),hov=u===hoverEnt;const rs=u.ring.userData.s;
-  if(hov&&u.team!==ME){u.ring.material.color.set(0xff8a6a);u.ring.material.opacity=.95;}else{u.ring.material.color.set(TEAMCOL[u.team]);u.ring.material.opacity=sel?.95:.28;}
+  if(hov&&u.team!==ME){u.ring.material.color.set(0xff8a6a);u.ring.material.opacity=.95;}else{u.ring.material.color.set(TEAMCOL[tci(u.team)]);u.ring.material.opacity=sel?.95:.28;}
   const k=sel?rs*(1+Math.sin(clock*6)*.05):rs;u.ring.scale.set(k,k,1);
   if(u.hitFlash>0)u.mat.color.setRGB(1,.45,.4);else if(now<u.slowUntil)u.mat.color.setRGB(.8,1,.75);else u.mat.color.setRGB(1,1,1);
   const r=u.hp/u.maxhp;const show=vis&&(sel||r<.999||hov);u.bg.visible=u.fg.visible=show;if(show)placeBar(u,S*.9,r,hpCol(r));
@@ -4141,7 +4148,7 @@ function syncUnit(u,dt){const Y=gy(u.pos.x,u.pos.z);if(u.dead){u.mat.opacity=Mat
     u.cs.visible=true;u.cs.position.set(u.pos.x-u.face*.5,Y+1.3,u.pos.z);}else if(u.cs)u.cs.visible=false;}}
 function syncBld(b){const sel=selection.has(b),hov=b===hoverEnt;b.G.scale.y=b.built?1:.12+.88*b.prog;
   const vt=viewTeam();const vis=fogShown(vt,b);b.G.visible=vis;
-  b.ring.visible=vis&&(sel||hov);b.ring.material.color.set(hov&&b.team!==ME?0xff8a6a:TEAMCOL[b.team]);
+  b.ring.visible=vis&&(sel||hov);b.ring.material.color.set(hov&&b.team!==ME?0xff8a6a:TEAMCOL[tci(b.team)]);
   const r=b.built?b.hp/b.maxhp:b.prog;const show=vis&&(sel||hov||b.hp<b.maxhp-1||!b.built);b.bg.visible=b.fg.visible=show;if(show)placeBar(b,b.top*(b.built?1:.12+.88*b.prog)+.4,r,b.built?hpCol(r):0x6fb3e6);}
 function animateBases(t,dt){animateExtBld(t);for(const b of blds){if(b.dead||!b.built)continue;b.m.spin.forEach(([o,sp,ax])=>{if(ax==='yo')o.rotation.y=Math.sin(t*sp)*.6;else if(ax==='y')o.rotation.y+=sp*dt;else if(ax==='rock')o.rotation.z=Math.sin(t*sp)*.3;else if(ax==='hammer')o.rotation.z=-Math.abs(Math.sin(t*sp))*1.1;else o.rotation.z+=sp*dt;});
   b.m.bob.forEach((o,i)=>{if(o.userData.by==null)o.userData.by=o.position.y;o.position.y=o.userData.by+Math.sin(t*1.6+i)*.12;});}ENV.spin.forEach(([o,sp])=>{o.rotation.z+=sp*dt;});ENVANIM.jacks.forEach((j,i)=>{j.beam.rotation.z=Math.sin(t*1.3+i)*.28;});WATER.forEach(w=>{w.offset.x=Math.sin(t*.2)*.05;w.offset.y=t*.01;});
@@ -4341,9 +4348,9 @@ const NCOL={vent:'#ff7a29',sap:'#e6c25a',gold:'#f0c84a',scrap:'#b8b0a4',rice:'#e
 function drawMini(){if(!miniBase)return;mg.drawImage(miniBase,0,0);
   for(const n of nodes){if(n.amt<1||(FOG.on&&!fogExpXZ(n.pos.x,n.pos.z)))continue;mg.fillStyle=NCOL[n.kind];mg.fillRect(mx(n.pos.x)-1,mz(n.pos.z)-1,2,2);}
   fogMini(mg,mx,mz);const vt=viewTeam();
-  for(const b of blds){if(b.dead||(vt>=0&&!fogShown(vt,b)))continue;const s=Math.max(3,b.r*2.4);mg.fillStyle=TEAMCOL[b.team];mg.fillRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);mg.strokeStyle='#140f0c';mg.lineWidth=1;mg.strokeRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);}
+  for(const b of blds){if(b.dead||(vt>=0&&!fogShown(vt,b)))continue;const s=Math.max(3,b.r*2.4);mg.fillStyle=TEAMCOL[tci(b.team)];mg.fillRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);mg.strokeStyle='#140f0c';mg.lineWidth=1;mg.strokeRect(mx(b.pos.x)-s/2,mz(b.pos.z)-s/2,s,s);}
   for(const b of BLKS){if(b.dead)continue;mg.fillStyle=b.key==='lavablocco'?'#5a4a40':'#b9a888';mg.fillRect(mx(b.pos.x)-3,mz(b.pos.z)-2,6,4);mg.strokeStyle='#140f0c';mg.lineWidth=1;mg.strokeRect(mx(b.pos.x)-3,mz(b.pos.z)-2,6,4);}
-  for(const u of units){if(u.dead||(vt>=0&&!fogShown(vt,u)))continue;mg.fillStyle=selection.has(u)?'#ffffff':TEAMCOL[u.team];mg.fillRect(mx(u.pos.x)-1,mz(u.pos.z)-1,u.T.big?3:2,u.T.big?3:2);}
+  for(const u of units){if(u.dead||(vt>=0&&!fogShown(vt,u)))continue;mg.fillStyle=selection.has(u)?'#ffffff':TEAMCOL[tci(u.team)];mg.fillRect(mx(u.pos.x)-1,mz(u.pos.z)-1,u.T.big?3:2,u.T.big?3:2);}
   const cs=[[0,0],[innerWidth,0],[innerWidth,innerHeight],[0,innerHeight]].map(([x,y])=>groundAt(x,Math.max(y,innerHeight*.08)));
   if(cs.every(Boolean)){mg.strokeStyle='rgba(239,227,207,.85)';mg.lineWidth=1;mg.beginPath();cs.forEach((p,i)=>{const X=mx(p.x),Y=mz(p.z);if(i)mg.lineTo(X,Y);else mg.moveTo(X,Y);});mg.closePath();mg.stroke();}}
 function miniTo(e){const r=mini.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*MW,y=(e.clientY-r.top)/r.height*MH;cam.tx=x/MW*(MAP.X*2+4)-MAP.X-2;cam.tz=y/MH*(MAP.Z*2+4)-MAP.Z-2-cam.dist*.05;clampCam();}
@@ -4394,7 +4401,7 @@ function renderRes(){const el=$('#resbar');const one=t=>{const R=RACES[t.race];c
   return '<span class="ri" title="'+R.p+'">'+ico(R.ip,R.pc)+'<span class="lab rl">'+R.p+'</span><b>'+fmt(t.res.p)+'</b></span>'+(R.s?'<span class="ri" title="'+R.s+'">'+ico(R.is,R.sc)+'<span class="lab rl">'+R.s+'</span><b>'+fmt(t.res.s)+'</b></span>':'')+
     '<span class="ri'+(pop>=cap?' warn':'')+'" title="'+LT('Popolazione')+'">'+(ICOK[R.ipop]?ico(R.ipop)+'<span class="lab rl">Pop.</span>':'<span class="lab">Pop.</span>')+'<b>'+pop+'/'+cap+'</b></span><span class="ri"><span class="lab">'+LT('Liv.')+'</span><b>'+t.level+'</b></span>';};
   const secs=Math.floor(now);const time='<span class="ri tm"><b>'+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0')+'</b></span>';
-  const h=picks.mode==='watch'?teams.map((t,i)=>'<span class="team"><i class="dot" style="background:'+TEAMCOL[i]+'"></i>'+RACES[t.race].name+'</span>'+one(t)).join('<span class="sep"></span>')+time:one(teams[ME])+time;
+  const h=picks.mode==='watch'?teams.map((t,i)=>'<span class="team"><i class="dot" style="background:'+TEAMCOL[tci(i)]+'"></i>'+RACES[t.race].name+'</span>'+one(t)).join('<span class="sep"></span>')+time:one(teams[ME])+time;
   if(el._h!==h){el.innerHTML=h;el._h=h;}}
 let cmdSpecs=[];
 function btn(o){return o;}
@@ -4803,6 +4810,11 @@ function netRx(m){NET.lastRx=performance.now();if(!m||typeof m!=='object')return
   else if(m.t==='bye'){if(LOCK.on&&gameOn&&!ended)lockAlone();return;}
   else if(m.t==='tk'){if(LOCK.on&&m.k>=LOCK.k)LOCK.theirs[m.k]=m.c||[];return;}
   else if(m.t==='h'){if(LOCK.on){LOCK.hT[m.k]=m.h;lockCmp(m.k);}return;}
+  else if(m.t==='sync'){if(LOCK.on&&NET.role==='guest'&&m.k>LOCK.syncFrom){if(m.k>=LOCK.k){if(m.k>LOCK.syncAt)LOCK.syncAt=m.k;}else netSend({t:'late',k:LOCK.k});}return;}
+  else if(m.t==='late'){if(LOCK.on&&NET.role==='host'&&LOCK.syncAt<0&&!LOCK.lastSnap)lockSyncPlan(m.k);return;}
+  else if(m.t==='sp'){if(LOCK.on&&NET.role==='guest'&&m.k>=LOCK.k&&m.k>LOCK.syncFrom){let I=LOCK.snapIn;if(!I||I.k!==m.k)I=LOCK.snapIn={k:m.k,n:m.n,got:0,p:[]};
+    if(I.p[m.i]==null){I.p[m.i]=m.s;I.got++;}if(m.k>LOCK.syncAt)LOCK.syncAt=m.k;}return;}
+  else if(m.t==='spok'){if(LOCK.on&&NET.role==='host'&&LOCK.lastSnap&&LOCK.lastSnap.k===m.k){LOCK.lastSnap=null;LOCK.nSync++;netLog('l\'altro ha caricato la copia del passo '+m.k+(m.ok?'':' (ma la sua foto non e\' identica)'));toast(LT('Partite riallineate'));}return;}
   else if(m.t==='bg'){NET.otherHidden=true;netLog('l\'altro e\' andato in background');}
   else if(m.t==='fg'){NET.otherHidden=false;netLog('l\'altro e\' tornato');}
   else if(m.t==='full'){netStatus(LT('Questa partita ha già due giocatori.'));netReset();return;}
@@ -4862,12 +4874,14 @@ $('#bNetLeave').addEventListener('click',()=>{netReset();netStatus(LT('Collegame
    (5 passi = 0,25 s di gioco): intanto il pacchetto arriva all'altro. Ogni passo ha un pacchetto da ciascuno dei due (anche vuoto):
    un dispositivo esegue il passo k solo quando ha anche quello dell'altro, quindi le due partite restano allo stesso passo.
    Prima gli ordini dell'host (squadra 0), poi quelli dell'altro (squadra 1), sempre nello stesso ordine.
-   Ogni 100 passi (5 s) si confronta un'impronta della partita: se non coincide lo si dice e lo si annota (la copia dello stato e' un passo dopo). */
+   Ogni 100 passi (5 s) si confronta un'impronta della partita: se non coincide l'host copia la sua partita sull'altro (punto 3, piu' sotto e in copia.js). */
 const TICK=.05,LOCK_D=5,HASH_EVERY=100;
-function lockStart(){Object.assign(LOCK,{on:true,pend:[],k:0,acc:0,mine:{},theirs:{},hM:{},hT:{},dump:{},bad:-1,waitT:0,ticks:0});}
+function lockStart(){Object.assign(LOCK,{on:true,pend:[],k:0,acc:0,mine:{},theirs:{},hM:{},hT:{},dump:{},bad:-1,waitT:0,ticks:0,syncAt:-1,syncFrom:0,snapIn:null,lastSnap:null,nSync:0,snapOk:null});}
 function lockAdvance(dt){LOCK.acc=Math.min(LOCK.acc+dt,.25);const host=NET.role==='host';
   while(LOCK.acc>=TICK-1e-9&&gameOn&&!ended){const k=LOCK.k,s=k+LOCK_D;
     if(!(s in LOCK.mine)){LOCK.mine[s]=LOCK.pend;LOCK.pend=[];netSend({t:'tk',k:s,c:LOCK.mine[s]});delete LOCK.mine[s-4*LOCK_D];}
+    /* copia della partita (copia.js): al passo fissato l'host manda la foto, l'altro si ferma finche' non l'ha caricata */
+    if(LOCK.syncAt===k){if(host)lockSnapSend(k);else{const I=LOCK.snapIn;if(!I||I.k!==k||I.got<I.n){LOCK.waitT+=dt;break;}lockSnapLoad(k);}}
     if(k>=LOCK_D&&!(k in LOCK.theirs)){LOCK.waitT+=dt;break;}
     const a=LOCK.mine[k]||[],b=LOCK.theirs[k]||[];delete LOCK.theirs[k];
     for(const c of host?a:b)cmdRun(c,0);for(const c of host?b:a)cmdRun(c,1);
@@ -4877,7 +4891,23 @@ function lockAdvance(dt){LOCK.acc=Math.min(LOCK.acc+dt,.25);const host=NET.role=
 function netBye(){netSend({t:'bye'});LOCK.on=false;NET.playing=false;netUnpause();}
 function lockAlone(){LOCK.on=false;NET.playing=false;netUnpause();const o=teams[1-ME];if(o){o.ai=true;o.aiT=1;}netLog('l\'altro e\' uscito: al suo posto gioca l\'IA');toast(LT('L’altro giocatore è uscito: al suo posto gioca l’IA'));}
 /* dopo un ricollegamento si rimandano i pacchetti che l'altro potrebbe non avere */
-function lockResend(){if(!LOCK.on)return;for(const s in LOCK.mine)if(+s>=LOCK.k-LOCK_D)netSend({t:'tk',k:+s,c:LOCK.mine[s]});}
+function lockResend(){if(!LOCK.on)return;for(const s in LOCK.mine)if(+s>=LOCK.k-LOCK_D)netSend({t:'tk',k:+s,c:LOCK.mine[s]});
+  /* una copia in corso: si rimanda l'annuncio e, se gia' partita, la foto (l'altro scarta quello che ha gia') */
+  if(NET.role==='host'){if(LOCK.syncAt>=0)netSend({t:'sync',k:LOCK.syncAt});if(LOCK.lastSnap)lockSnapParts(LOCK.lastSnap);}}
+/* ---------- punto 3: copia della partita (le regole della foto sono in copia.js) ----------
+   L'host fissa il passo S = adesso + 10. L'altro non puo' essere gia' oltre: per andare avanti gli servono i pacchetti dell'host,
+   e quelli dei passi dopo adesso+4 partono DOPO l'annuncio (il canale consegna in ordine). */
+function lockSyncPlan(atLeast){if(LOCK.syncAt>=0||LOCK.lastSnap)return;const S=Math.max(LOCK.k,atLeast||0)+2*LOCK_D;LOCK.syncAt=S;netSend({t:'sync',k:S});netLog('copio la partita all\'altro al passo '+S);}
+function lockSnapParts(L){const n=Math.max(1,Math.ceil(L.d.length/SNAP_PART));for(let i=0;i<n;i++)netSend({t:'sp',k:L.k,i,n,s:L.d.slice(i*SNAP_PART,(i+1)*SNAP_PART)});}
+function lockSnapSend(k){const d=snapTake();LOCK.lastSnap={k,d};LOCK.syncAt=-1;lockSyncDone(k);lockSnapParts(LOCK.lastSnap);netLog('foto della partita al passo '+k+' ('+Math.round(d.length/1024)+' kB) mandata');}
+function lockSnapLoad(k){const d=LOCK.snapIn.p.join('');LOCK.snapIn=null;LOCK.syncAt=-1;
+  /* se la copia fallisse a meta' lo si dice all'host: alla prossima impronta diversa ne manda un'altra */
+  try{snapApply(d);}catch(e){netLog('ERRORE nella copia: '+(e&&e.stack||e));LOCK.snapOk=false;lockSyncDone(k);netSend({t:'spok',k,ok:false});return;}
+  /* controllo: la mia partita, fotografata adesso, deve essere identica a quella dell'host */
+  const mine=snapTake();LOCK.snapOk=mine===d;if(!LOCK.snapOk){let i=0;while(i<d.length&&d[i]===mine[i])i++;netLog('copia non identica dal carattere '+i+': '+d.slice(Math.max(0,i-80),i+80)+' | '+mine.slice(Math.max(0,i-80),i+80));}
+  lockSyncDone(k);LOCK.nSync++;netSend({t:'spok',k,ok:LOCK.snapOk});netLog('partita copiata dall\'host al passo '+k);toast(LT('Partite riallineate'));}
+/* dopo la copia: si dimenticano le impronte di prima (si confrontano solo quelle dei passi da S in poi) */
+function lockSyncDone(k){LOCK.syncFrom=k;LOCK.bad=-1;for(const o of [LOCK.hM,LOCK.hT,LOCK.dump])for(const s in o)if(+s<k)delete o[s];}
 /* impronta: risorse, unita', edifici, giacimenti e blocchi, con i numeri esatti */
 function lockState(){const f=x=>typeof x==='number'?String(x):String(x);const L=['t'+f(now)];
   for(const t of teams)L.push('T'+t.id+':'+f(t.res.p)+','+f(t.res.s)+','+t.level+','+f(t.genAcc));
@@ -4885,10 +4915,118 @@ function lockState(){const f=x=>typeof x==='number'?String(x):String(x);const L=
   for(const b of blds)L.push('b'+b.id+':'+b.key+','+f(b.hp)+','+f(b.prog)+','+b.queue.map(q=>q.kind+(q.key||q.lvl||q.r||'')+'@'+f(q.t)).join('|'));
   for(const n of nodes)L.push('n'+n.id+':'+f(n.amt));for(const b of BLKS)L.push('x'+b.id+':'+f(b.hp));return L;}
 function lockFnv(L){let h=0x811c9dc5;for(const s of L){for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}h^=10;h=Math.imul(h,16777619);}return(h>>>0).toString(16);}
-function lockCmp(k){const a=LOCK.hM[k],b=LOCK.hT[k];if(a==null||b==null)return;delete LOCK.hT[k];
+function lockCmp(k){const a=LOCK.hM[k],b=LOCK.hT[k];if(a==null||b==null)return;delete LOCK.hT[k];if(k<LOCK.syncFrom)return;
   if(a===b){if(k%(HASH_EVERY*12)===0)netLog('passo '+k+': partite uguali ('+a+')');return;}
-  if(LOCK.bad<0){LOCK.bad=k;netLog('ATTENZIONE: al passo '+k+' le due partite non sono piu\' uguali ('+a+' contro '+b+')');toast(LT('Attenzione: le due partite non sono più uguali'));}}
+  if(LOCK.bad<0){LOCK.bad=k;netLog('ATTENZIONE: al passo '+k+' le due partite non sono piu\' uguali ('+a+' contro '+b+')');}
+  /* 15 novembre: non piu' solo un avviso; l'host copia la sua partita sull'altro dispositivo */
+  if(NET.role==='host')lockSyncPlan();}
 window.__NET=NET;window.__LOCK=LOCK;
+
+/* ---------- MULTIGIOCATORE, punto 3 (15 novembre, richiesta dell'utente): COPIA DELLA PARTITA dall'host ----------
+   Se le impronte dicono che le due partite non sono piu' uguali, l'host fissa un passo S poco piu' avanti (10 passi = 0,5 s) e lo dice all'altro.
+   Arrivati al passo S (prima degli ordini di quel passo) l'host fotografa la partita (snapTake) e la manda a pezzi; l'altro dispositivo
+   si ferma al passo S finche' non l'ha ricevuta tutta, la carica (snapApply) e riparte. Da li' le due partite sono di nuovo identiche.
+   Cosa si copia: tutte le cose della partita (unita', mostri anche ritirati, edifici, giacimenti, blocchi, proiettili in volo), le squadre,
+   il tempo, i numeri delle cose, il generatore delle regole, giorno/notte, l'altura e (se gioca un'IA) quello che vede l'IA.
+   Ogni cosa con tutti i suoi valori; i disegni NON viaggiano: chi riceve tiene i suoi e ne crea di nuovi solo per le cose che non aveva.
+   Formato: ogni valore non semplice e' una piccola lista con una lettera in testa ('o' oggetto, 'a' lista, 'v' vettore, 'e' una cosa della partita
+   per numero, 't' una squadra, 'r' un oggetto gia' visto, 'n' numeri speciali, 'u' undefined, 's' insieme, 'm' mappa, 'T' memoria a byte).
+   Gli oggetti gia' visti si richiamano col loro numero: due riferimenti allo stesso oggetto restano lo stesso oggetto anche dopo la copia. */
+const SNAP_SKIP={sp:1,mat:1,tex:1,texB:1,sh:1,ring:1,bg:1,fg:1,cs:1,G:1,m:1,smoke:1,_vis:1,ftF:1,ftB:1,T:1};
+const SNAP_PART=8000;/* PeerJS con serializzazione json rifiuta i messaggi piu' grandi di circa 16 kB: la foto viaggia a pezzi */
+function snapThree(v){return !!(v.isObject3D||v.isMaterial||v.isTexture||v.isBufferGeometry||v.nodeType||typeof v.getContext==='function');}
+function snapIsEnt(v){return typeof v.id==='number'&&!!(v.isB||v.isN||(v.T&&typeof v.key==='string'));}
+function snapCat(e){return e.isX?'x':e.isB?'b':e.isN?'n':'u';}
+function snapRle(a){const r=[];for(let i=0;i<a.length;){const v=a[i];let j=i+1;while(j<a.length&&a[j]===v)j++;r.push(v,j-i);i=j;}return r;}
+function snapUnrle(name,len,r){const C=globalThis[name]||(typeof window!=='undefined'&&window[name]);const a=new C(len);let p=0;for(let i=0;i<r.length;i+=2){a.fill(r[i],p,p+r[i+1]);p+=r[i+1];}return a;}
+const SNAP_NO={};/* segno: valore da non copiare (disegni, funzioni) */
+/* ---- foto della partita (host) ---- */
+function snapTake(){const seen=new Map();let nObj=0;const E=[],Eid=new Map();
+  const ent=e=>{if(!Eid.has(e.id)){Eid.set(e.id,e);E.push(e);}return ['e',e.id];};
+  const enc=v=>{const ty=typeof v;
+    if(ty==='number')return Number.isFinite(v)&&!Object.is(v,-0)?v:['n',Object.is(v,-0)?'-0':String(v)];
+    if(ty==='string'||ty==='boolean'||v===null)return v;if(ty==='undefined')return ['u'];if(ty!=='object')return SNAP_NO;
+    if(snapThree(v))return SNAP_NO;if(snapIsEnt(v))return ent(v);
+    if(v===teams.n)return ['t','n'];{const ti=teams.indexOf(v);if(ti>=0)return ['t',ti];}
+    if(seen.has(v))return ['r',seen.get(v)];seen.set(v,nObj++);
+    if(v.isVector3)return ['v',enc(v.x),enc(v.y),enc(v.z)];
+    if(ArrayBuffer.isView(v))return ['T',v.constructor.name,v.length,snapRle(v)];
+    if(v instanceof Set)return ['s',[...v].map(x=>{const y=enc(x);return y===SNAP_NO?null:y;})];
+    if(v instanceof Map)return ['m',[...v].map(([a,b])=>{const x=enc(a),y=enc(b);return [x===SNAP_NO?null:x,y===SNAP_NO?null:y];})];
+    if(Array.isArray(v))return ['a',v.map(x=>{const y=enc(x);return y===SNAP_NO?null:y;})];
+    const o={};for(const k in v){if(!Object.prototype.hasOwnProperty.call(v,k))continue;const y=enc(v[k]);if(y!==SNAP_NO)o[k]=y;}return ['o',o];};
+  /* campi di una cosa o di una squadra: in ordine alfabetico, come coppie [nome, valore] */
+  const fields=(o,skip)=>{const out=[];for(const k of Object.keys(o).sort()){if(skip&&SNAP_SKIP[k])continue;const v=o[k];if(v&&typeof v==='object'&&snapThree(v))continue;const y=enc(v);if(y!==SNAP_NO)out.push([k,y]);}return out;};
+  const id=e=>ent(e)[1];const L={u:units.map(id),mo:MONS.map(id),b:blds.map(id),n:nodes.map(id),x:BLKS.map(id)};
+  const tm=[teams[0],teams[1],teams.n].map(t=>t?fields(t,false):null);
+  const pj=enc(projectiles);
+  const tv=teams.some(t=>t.ai)?enc(TV):null;
+  /* altura: le posizioni sono quelle (vive) delle cose; se la cosa non c'e' piu' si scrive il punto */
+  const posOf=new Map();for(const e of units.concat(MONS,blds))posOf.set(e.pos,e);
+  const hgIds=a=>a?a.map(p=>{const e=posOf.get(p);return e?ent(e)[1]:[p.x,p.y,p.z];}):null;
+  const hg={t:enc(HG.t),spot:HG.spot.map(hgIds),low:HG.low.map(hgIds)};
+  const inL=new Set([].concat(units,MONS,blds,nodes,BLKS));
+  const Eout=[];for(let i=0;i<E.length;i++){const e=E[i];/* E cresce mentre si scrivono i campi: le cose nominate dentro altre cose si aggiungono in coda */
+    Eout.push({h:[snapCat(e),e.id,e.isN?e.kind:e.key,e.team,e.pos?e.pos.x:0,e.pos?e.pos.z:0,!!e.built,!!e.wreck,inL.has(e)?1:0],f:fields(e,true)});}
+  return JSON.stringify({now:enc(now),uid,endT:enc(endTimer),ended,g:GRNG?GRNG.s:null,night:MONNIGHT,L,tm,pj,tv,hg,E:Eout});}
+/* ---- caricamento della foto (dispositivo che si e' unito) ---- */
+function snapApply(str){const S=JSON.parse(str);
+  /* 1) le cose che ho io adesso, per numero; "vive" = hanno ancora il disegno nella scena */
+  const loc=new Map(),add=(e,live)=>{if(e&&typeof e.id==='number'&&!loc.has(e.id))loc.set(e.id,{e,live});};
+  units.forEach(u=>add(u,true));MONS.forEach(m=>add(m,!!m.away));blds.forEach(b=>add(b,true));nodes.forEach(n=>add(n,true));BLKS.forEach(b=>add(b,true));
+  projectiles.forEach(p=>{add(p.src,false);if(p.to)add(p.to,false);});
+  const wasDeadX=new Map(BLKS.map(b=>[b.id,!!b.dead]));const lvl0=[0,1].map(t=>teams[t].level);
+  const ents=new Map(),kept=new Set(),made=new Set();
+  for(const {h} of S.E){const [c,id,key,team,x,z,built,wreck,inList]=h;const L=loc.get(id);let o=null;
+    if(inList){if(L&&L.live&&snapCat(L.e)===c&&(c==='n'?L.e.kind:L.e.key)===key&&L.e.team===team){o=L.e;kept.add(o);}
+      else{if(c==='u'){o=spawnUnit(key,team,x,z);if(TYPES[key].mon)monSkin(o);}
+        else if(c==='b')o=spawnBuilding(key,team,x,z,built);
+        else if(c==='n')o=spawnNode(key,x,z,1,wreck?{wreck:true}:null);
+        else o={isB:true,isX:true,G:null,T:BLKS[0]?BLKS[0].T:{name:'',arm:BLK.arm,trains:[],info:''}};
+        made.add(o);}}
+    else{o=L?L.e:{};if(!L){if(c==='u')o.T=TYPES[key];else if(c==='b')o.T=BT[key];}}
+    ents.set(id,o);}
+  /* 2) via i disegni delle cose che l'host non ha piu' (o che vanno rifatte) */
+  for(const {e,live} of loc.values()){if(!live||kept.has(e))continue;const c=snapCat(e);
+    if(c==='u')removeUnit(e);
+    else if(c==='b'){(e.m.lights||[]).forEach(l=>{l.intensity=0;scene.attach(l);PARKED.push(l);});scene.remove(e.G);scene.remove(e.ring);[e.bg,e.fg].forEach(o=>{scene.remove(o);o.material.dispose();});}
+    else if(c==='n')scene.remove(e.G);else if(e.G)scene.remove(e.G);}
+  projectiles.forEach(p=>{scene.remove(p.sp);p.sp.material.dispose();});
+  /* 3) i valori, nello stesso ordine in cui l'host li ha scritti */
+  const tab=[];const dec=x=>{if(x===null||typeof x!=='object')return x;const t=x[0];
+    if(t==='n')return x[1]==='-0'?-0:Number(x[1]);if(t==='u')return undefined;if(t==='e')return ents.get(x[1]);
+    if(t==='t')return x[1]==='n'?teams.n:teams[x[1]];if(t==='r')return tab[x[1]];
+    if(t==='v'){const o=new THREE.Vector3();tab.push(o);o.set(dec(x[1]),dec(x[2]),dec(x[3]));return o;}
+    if(t==='T'){const o=snapUnrle(x[1],x[2],x[3]);tab.push(o);return o;}
+    if(t==='s'){const o=new Set();tab.push(o);for(const y of x[1])o.add(dec(y));return o;}
+    if(t==='m'){const o=new Map();tab.push(o);for(const [a,b] of x[1])o.set(dec(a),dec(b));return o;}
+    if(t==='a'){const o=[];tab.push(o);for(const y of x[1])o.push(dec(y));return o;}
+    if(t==='o'){const o={};tab.push(o);for(const k in x[1])o[k]=dec(x[1][k]);return o;}
+    return undefined;};
+  const put=(o,F,skip)=>{const has=new Set();for(const [k,v] of F){has.add(k);o[k]=dec(v);}
+    for(const k of Object.keys(o)){if(has.has(k)||(skip&&SNAP_SKIP[k]))continue;const v=o[k];if(typeof v==='function'||(v&&typeof v==='object'&&snapThree(v)))continue;delete o[k];}};
+  [teams[0],teams[1],teams.n].forEach((t,i)=>{if(t&&S.tm[i])put(t,S.tm[i],false);});
+  projectiles=dec(S.pj);
+  if(S.tv){const tv=dec(S.tv);tv.forEach((s,i)=>{TV[i].vis.set(s.vis);TV[i].flat.set(s.flat);TV[i].exp.set(s.exp);TV[i].known=s.known;TV[i].spots=s.spots;TV[i].chk=s.chk;});}
+  for(const {h,f} of S.E)put(ents.get(h[1]),f,true);
+  units=S.L.u.map(id=>ents.get(id));MONS=S.L.mo.map(id=>ents.get(id));blds=S.L.b.map(id=>ents.get(id));nodes=S.L.n.map(id=>ents.get(id));BLKS=S.L.x.map(id=>ents.get(id));
+  now=dec(S.now);uid=S.uid;endTimer=dec(S.endT);ended=S.ended;if(GRNG&&S.g!=null)GRNG.s=S.g;MONNIGHT=S.night;
+  const hgP=a=>a?a.map(id=>Array.isArray(id)?new THREE.Vector3(id[0],id[1],id[2]):ents.get(id).pos):null;
+  HG.t=dec(S.hg.t);HG.spot=S.hg.spot.map(hgP);HG.low=S.hg.low.map(hgP);
+  /* 4) i disegni tornano in linea con i valori (il resto lo rifanno syncUnit e syncBld a ogni fotogramma) */
+  for(const p of projectiles){const s=p.src,A=s.isB?s.T.def:s.T,P=A&&A.proj?PROJ[A.proj]:null;
+    p.sp=!P?mkGlow(0xffd36a,.3):p.k==='line'?mkGlow(P.col,P.s):mkGlow(P.col,P.s,A.proj!=='magma'&&A.proj!=='shell'?false:true);}
+  for(const u of units.concat(MONS))if(u.mat){u.mat.transparent=!!u.T.stealth||!!u.dead;}
+  for(const m of MONS){if(!m.away||!m.sp)continue;if(!m._vis)m._vis=[true,true,false,false,false,false];[m.sp,m.sh,m.ring,m.bg,m.fg,m.cs].forEach(o=>{if(o)o.visible=false;});}
+  for(const b of BLKS){const was=wasDeadX.get(b.id);
+    if(made.has(b)){blkDraw(b,b.key==='lavablocco');if(b.dead)blkWreck(b);}
+    else if(b.dead&&!was)blkWreck(b);else if(!b.dead&&was){if(b.G)scene.remove(b.G);blkDraw(b,b.key==='lavablocco');}}
+  for(const n of nodes){n.G.visible=n.amt>=1;const s=(.55+.45*Math.min(1,n.amt/n.max))*(n.wreck?.6:1);n.G.scale.set(s,s,s);}
+  /* livello della base: i pezzi in piu' dell'edificio principale (la "cima" resta quella dell'host) */
+  for(const t of [0,1]){const L1=teams[t].level;for(const b of blds){if(b.team!==t||b.T.role!=='hq')continue;const from=made.has(b)?1:lvl0[t];if(L1<=from)continue;
+    const top=b.top;for(let lv=from+1;lv<=L1;lv++)addHqExtra(b,lv);b.top=top;}}
+  rebuildGrid();refreshSmoke();
+  for(const e of [...selection])if(e.dead||!(units.includes(e)||blds.includes(e)||BLKS.includes(e)))selection.delete(e);selDirty=true;hoverEnt=null;}
 
 window.__scene=scene;window.__T={ev(s){return eval(s);},get units(){return units},get blds(){return blds},get nodes(){return nodes},get teams(){return teams},picks,startGame,step,get now(){return now},get ended(){return ended},dbgMini(){try{drawMini();return 'ok '+!!miniBase+' '+gameOn+' '+miniT;}catch(e){return String(e.stack);}},clearFx(){fx.forEach(f=>{scene.remove(f.sp);f.sp.material.dispose();});fx=[];},spawn(k,t,x,z){return spawnUnit(k,t,x,z);},get blockers(){return BLOCKERS;},setSpeed(v){speed=v;},foot(){const out=[];for(const k in BT){const T=BT[k];try{const m=BUILD[T.race][T.model](0);const bx=new THREE.Box3();m.G.traverse(o=>{if(o.isMesh&&!o.isSprite){const b=new THREE.Box3().setFromObject(o);if(isFinite(b.min.x))bx.union(b);}});out.push([k,T.r,+(Math.max(-bx.min.x,bx.max.x,-bx.min.z,bx.max.z)).toFixed(2),+((bx.max.x-bx.min.x)/2).toFixed(2),+((bx.max.z-bx.min.z)/2).toFixed(2)]);}catch(e){out.push([k,String(e)]);}}return out;},placeOK(k,x,z){return placeOK(k,x,z);},L2W(t,x,z){return L2W(t,x,z);},blockedAt(x,z,r){return blocked(x,z,r);},get MF(){return MF;},get MG(){return MG;},newMap(s){newMap(s);},bench(n,q){if(q)setQuality(q);const px=new Uint8Array(4),gl=renderer.getContext();render();gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);const t=performance.now();for(let i=0;i<n;i++){render();gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);}return [(performance.now()-t)/n,W,H,PERF.calls];},camTo(x,z,d){cam.tx=x;cam.tz=z;cam.dist=d||cam.dist;},get info(){renderer.info.autoReset=false;renderer.info.reset();renderer.setRenderTarget(null);renderer.render(scene,camera);renderer.info.autoReset=true;return {calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geo:renderer.info.memory.geometries,tex:renderer.info.memory.textures,prog:renderer.info.programs.length,objs:scene.children.length}}};
 })();
