@@ -4319,8 +4319,8 @@ addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.k
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));addEventListener('blur',()=>keys.clear());
 function clampCam(){cam.tx=Math.max(-(MAP.X-2),Math.min(MAP.X-2,cam.tx));cam.tz=Math.max(-MAP.Z,Math.min(MAP.Z,cam.tz));}
 function updateKeys(dt){const s=cam.dist*.75*dt;if(keys.has('a')||keys.has('arrowleft'))cam.tx-=s;if(keys.has('d')||keys.has('arrowright'))cam.tx+=s;if(keys.has('w')||keys.has('arrowup'))cam.tz-=s;if(keys.has('s')||keys.has('arrowdown'))cam.tz+=s;clampCam();}
-function selectArmy(){const t=picks.mode==='watch'?-1:0;setSel(units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)),false);}
-function selectRole(sh){const t=picks.mode==='watch'?-1:0;const L=units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)&&isShooter(u.T)===sh);if(!L.length){toast(LT(sh?'Nessun tiratore':'Nessuna unità corpo a corpo'));return;}setSel(L,false);}
+function selectArmy(){const t=picks.mode==='watch'?-1:ME;setSel(units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)),false);}
+function selectRole(sh){const t=picks.mode==='watch'?-1:ME;const L=units.filter(u=>!u.dead&&!u.T.worker&&!u.T.pray&&(t<0||u.team===t)&&isShooter(u.T)===sh);if(!L.length){toast(LT(sh?'Nessun tiratore':'Nessuna unità corpo a corpo'));return;}setSel(L,false);}
 function selectIdleWorker(){const ws=units.filter(u=>u.team===ME&&!u.dead&&u.T.worker&&!u.order);if(!ws.length){toast(LT('Nessun lavoratore inattivo'));return;}const w=ws[(lastIdle++)%ws.length];setSel([w],false);cam.tx=w.pos.x;cam.tz=w.pos.z+4;}
 let lastIdle=0;
 function focusBase(){const hq=blds.find(b=>b.team===ME&&!b.dead&&b.T.role==='hq')||blds.find(b=>b.team===ME&&!b.dead);if(!hq)return;setSel([hq],false);cam.tx=hq.pos.x;cam.tz=hq.pos.z-4;}
