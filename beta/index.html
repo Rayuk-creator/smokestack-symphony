@@ -96,7 +96,7 @@ button.primary:hover{background:#e8b65a}
 .cb .gl{height:32px;display:grid;place-items:center;color:var(--brass);font-size:14px}
 .cb.bld .gl{color:var(--bone);background:linear-gradient(var(--plate-2),#1b1612);width:40px;border:1px solid rgba(217,164,65,.3)}
 .cb .lb{font-size:11px;line-height:1.05;max-width:100%;white-space:normal;overflow:hidden;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.cb .cs{display:flex;gap:5px;font-size:11px;font-variant-numeric:tabular-nums}
+.cb .cs{display:flex;flex-wrap:wrap;justify-content:center;gap:0 5px;max-width:100%;font-size:11px;font-variant-numeric:tabular-nums}.cb .cs .ico{width:14px;height:14px}
 .cost{display:inline-flex;align-items:center;gap:3px}.cost .d{width:6px;height:6px}
 .cb .lk{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .cb[aria-disabled="true"]{opacity:.5}
@@ -4437,7 +4437,27 @@ function buildSpecs(){const sel=[...selection].filter(e=>!e.dead);const tm=teams
 function renderCmd(){const el=$('#cmd');cmdSpecs=buildSpecs();const race=teams[ME].race;
   const h=cmdSpecs.map((s,i)=>'<button type="button" class="cb'+(s.bld?' bld':'')+(s.done?' done':'')+'" data-i="'+i+'"'+(s.dis?' aria-disabled="true"':'')+(s.pressed?' aria-pressed="true"':'')+' title="'+esc(s.title||s.label)+'">'+
     (s.icon?'<img alt="" src="'+s.icon+'">':'<span class="gl">'+esc(s.glyph||'')+'</span>')+'<span class="lb">'+esc(s.label)+'</span>'+(s.lock?'<span class="lk">'+s.lock+'</span>':s.done?'<span class="lk">'+LT('Fatto')+'</span>':s.cost?'<span class="cs">'+costHTML(s.cost,race)+'</span>':'')+'</button>').join('');
-  if(el._h!==h){el.innerHTML=h;el._h=h;}el.hidden=!cmdSpecs.length;}
+  if(el._h!==h){el.innerHTML=h;el._h=h;el.hidden=!cmdSpecs.length;fitLabels(el);}el.hidden=!cmdSpecs.length;}
+/* 15 novembre (richiesta dell'utente: "ricontrolla le scritte"): i nomi lunghi in una sola parola (Raccattarottami, Krankenstein...)
+   uscivano dal pulsante e venivano tagliati. 1) si rimpicciolisce la scritta a mezzo pixel alla volta, al massimo fino a 8 px;
+   2) se non basta, si va a capo con il trattino tra le sillabe (sillabe con una regola semplice, `sillabe`), dalla misura normale;
+   3) ultima risorsa: 3 righe, a capo anche dentro la parola, fino a 7 px. */
+const VOC='aeiouàèéìòùAEIOU';
+function sillabe(w){if(w.length<7)return w;let o='',last=-9;for(let i=0;i<w.length;i++){o+=w[i];const a=w[i],b=w[i+1],c=w[i+2],d=w[i+3];if(!b||!c||i<1||i>w.length-4||i-last<2)continue;const n0=o.length;
+  const v=x=>x&&VOC.includes(x),cons=x=>x&&/[a-z]/i.test(x)&&!v(x);
+  if(v(a)&&cons(b)&&v(c))o+='\u00AD';
+  else if(cons(a)&&cons(b)&&cons(c)&&v(d)&&i>=2&&a.toLowerCase()!==b.toLowerCase()&&!/^(ch|gh|sc|th|ph|sh|wh|ck)$/i.test(a+b))o+='\u00AD';
+  else if(cons(a)&&cons(b)&&v(c)&&!/^(ch|gh|gn|sc|sp|st|ck|th|ph|sh|wh)$/i.test(a+b)&&!/[lr]/i.test(b)&&i>=2)o+='\u00AD';
+  if(o.length>n0)last=i;}
+  return o;}
+function fitLabels(el){if(!el.querySelectorAll||typeof getComputedStyle!=='function')return;el.querySelectorAll('.cb .lb').forEach(lb=>{
+  lb.style.fontSize='';lb.style.overflowWrap='';lb.style.webkitLineClamp='';const txt=lb.textContent;const fs0=parseFloat(getComputedStyle(lb).fontSize);let fs=fs0;
+  const over=()=>lb.scrollWidth>lb.clientWidth+1||lb.scrollHeight>lb.clientHeight+1;
+  const shrink=min=>{while(over()&&fs>min){fs-=.5;lb.style.fontSize=fs+'px';}};
+  shrink(Math.min(8,fs0));if(!over())return;
+  lb.textContent=txt.split(' ').map(sillabe).join(' ');lb.style.hyphens='manual';fs=fs0;lb.style.fontSize='';shrink(Math.min(8,fs0));if(!over())return;
+  lb.style.webkitLineClamp='3';lb.style.overflowWrap='anywhere';shrink(7);});}
+addEventListener('resize',()=>{const el=$('#cmd');if(el){el._h=null;selDirty=true;}});
 $('#cmd').addEventListener('click',e=>{const b=e.target.closest('.cb');if(!b)return;const s=cmdSpecs[+b.dataset.i];if(!s)return;if(s.dis&&!s.bld){toast(s.why||LT('Non disponibile'));return;}s.on();renderCmd();});
 function bar(fr,col){return '<div class="bar"><i style="width:'+Math.round(Math.max(0,Math.min(1,fr))*100)+'%;background:'+col+'"></i></div>';}
 function renderSel(){const el=$('#sel');const sel=[...selection].filter(e=>!e.dead);let h;
