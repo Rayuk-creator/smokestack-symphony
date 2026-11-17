@@ -26,6 +26,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Mostri**: in ogni partita due mostri neutrali pattugliano una zona del campo. Non attaccano mai le basi; chi fa più danno a un mostro quando cade riceve 300 della propria risorsa principale.
 - **Giorno e notte**: 5 minuti di giorno e 3 di notte. Al calare della notte i mostri del giorno si ritirano e compaiono quelli notturni (Orso delle caverne o Ragno gigante); chi si ritira torna al ciclo dopo con la vita che gli restava, chi muore resta morto.
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
+- **Eroi**: al livello 2 ogni razza può addestrare dalla base principale il suo eroe, uno solo, con un'aura che aiuta chi gli sta vicino. Se muore rinasce dalla base a metà prezzo.
 - La base ha due livelli. La popolazione massima è 55.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
 
@@ -37,14 +38,14 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 **Tiratori**: da fermi sparano solo a chi hanno a tiro e non inseguono; se li colpiscono da fuori tiro si avvicinano. Per farli inseguire, ordina di attaccare un nemico. Nei gruppi misti il corpo a corpo va davanti. I tasti **Tiratori** e **Mischia** selezionano tutte le unità di quel tipo.
 
 ### Le sei razze
-| Razza | Chi sono | Risorse | Élite |
-|---|---|---|---|
-| **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator |
-| **Thalren** | Elfi silvani | Linfa | Custode della foresta |
-| **Vaelrith** | Elfi oscuri, setta steampunk che prega | Oro e preghiere | The Sealed |
-| **Scrappers** | Goblin rottamai chimici | Rottami e fanghi tossici | Krankenstein |
-| **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō |
-| **Cogborn** | Automi fuggiti dai nani, si riparano tra loro | Lega antica ed Etere | Automa Engine |
+| Razza | Chi sono | Risorse | Élite | Eroe |
+|---|---|---|---|---|
+| **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator | Ardun Doran: più danno a Fucilieri, Mortai, Lanciafiamme e Magminator |
+| **Thalren** | Elfi silvani | Linfa | Custode della foresta | Talruin Erem: i Druidi delle radici curano di più |
+| **Vaelrith** | Elfi oscuri, setta steampunk che prega | Oro e preghiere | The Sealed | Euschess: preghiere in più vicino al Santuario oscuro |
+| **Scrappers** | Goblin rottamai chimici | Rottami e fanghi tossici | Krankenstein | Ruttam: rottami da ogni nemico che cade vicino a lui |
+| **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō | Daimyo Oda: più danno a Samurai e Ronin |
+| **Cogborn** | Automi fuggiti dai nani, si riparano tra loro | Lega antica ed Etere | Automa Engine | The Clockwork: più vita ai Cogborn vicini |
 
 ### Se il gioco va a scatti
 Nel menu di pausa trovi **Qualità grafica** (Alta, Media, Bassa). Il gioco la sceglie da solo e la abbassa se serve. Con **Info prestazioni** → *Copia i dati* puoi mandarci i numeri del tuo dispositivo: ci aiutano molto.
@@ -72,6 +73,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Monsters**: every game two neutral monsters patrol an area of the field. They never attack bases; whoever deals the most damage to a monster when it falls gets 300 of their main resource.
 - **Day and night**: 5 minutes of day and 3 of night. At nightfall the day monsters withdraw and the night ones appear (Cave Bear or Giant Spider); a monster that withdraws comes back next cycle with the health it had left, a dead one stays dead.
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
+- **Heroes**: at level 2 each race can train its hero from the main base, only one, with an aura that helps nearby units. If the hero dies it is reborn at the base for half the price.
 - Bases have two levels. Population cap is 55.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
 
@@ -83,14 +85,14 @@ You start with your main base and five workers already gathering. Collect your r
 **Ranged units**: when standing still they only fire at enemies in range and don't chase; if hit from out of range they move closer. To make them chase, order them to attack an enemy. In mixed groups, melee units go in front. The **Ranged** and **Melee** buttons select all units of that kind.
 
 ### The six races
-| Race | Who they are | Resources | Elite |
-|---|---|---|---|
-| **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator |
-| **Thalren** | Forest elves | Sap | Forest Warden |
-| **Vaelrith** | Dark elves, a praying steampunk sect | Gold and prayers | The Sealed |
-| **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein |
-| **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō |
-| **Cogborn** | Automatons that escaped the dwarves and repair each other | Ancient Alloy and Ether | Engine Automaton |
+| Race | Who they are | Resources | Elite | Hero |
+|---|---|---|---|---|
+| **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator | Ardun Doran: more damage for Riflemen, Mortars, Flamethrowers and Magminators |
+| **Thalren** | Forest elves | Sap | Forest Warden | Talruin Erem: Root Druids heal more |
+| **Vaelrith** | Dark elves, a praying steampunk sect | Gold and prayers | The Sealed | Euschess: extra prayers near the Dark Sanctuary |
+| **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein | Ruttam: scrap from every enemy that falls near him |
+| **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō | Daimyo Oda: more damage for Samurai and Ronin |
+| **Cogborn** | Automatons that escaped the dwarves and repair each other | Ancient Alloy and Ether | Engine Automaton | The Clockwork: more health for nearby Cogborn |
 
 ### If the game stutters
 The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
