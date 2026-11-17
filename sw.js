@@ -1,8 +1,8 @@
-/* Smokestack Symphony: funziona anche senza internet (modello: tools/pwa_build.py sostituisce 3eb1463434 e ["./", "./index.html", "./three.module.js", "./three.core.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon-32.png"]).
+/* Smokestack Symphony: funziona anche senza internet (modello: tools/pwa_build.py sostituisce dea0a3e550 e ["./", "./index.html", "./three.module.js", "./three.core.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon-32.png"]).
    La pagina si prende prima dalla rete (cosi' gli aggiornamenti arrivano subito); se la rete manca o e' troppo lenta,
    dalla copia salvata. Gli altri file (Three.js, icone) si prendono dalla copia salvata.
    Sullo stesso sito ci sono altri giochi (per esempio quello di matematica): si cancellano solo le copie di questo gioco. */
-const VERSION = '3eb1463434';
+const VERSION = 'dea0a3e550';
 const FILES = ["./", "./index.html", "./three.module.js", "./three.core.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png", "./favicon-32.png"];
 const PRE = 'ss-' + new URL(self.registration.scope).pathname + '-';
 const CACHE = PRE + VERSION;

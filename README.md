@@ -26,6 +26,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Mostri**: in ogni partita due mostri neutrali pattugliano una zona del campo. Non attaccano mai le basi; chi fa più danno a un mostro quando cade riceve 300 della propria risorsa principale.
 - **Giorno e notte**: 5 minuti di giorno e 3 di notte. Al calare della notte i mostri del giorno si ritirano e compaiono quelli notturni (Orso delle caverne o Ragno gigante); chi si ritira torna al ciclo dopo con la vita che gli restava, chi muore resta morto.
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
+- **Gioca con un amico**: dal pulsante *🔗 Gioca con un amico* uno crea la partita e detta il codice di 5 lettere all'altro, che lo scrive e si unisce; poi l'host preme *Inizia insieme*. Si gioca uno contro l'altro sulla stessa mappa, su computer, telefono o tablet. Se uno dei due mette il gioco in secondo piano la partita va in pausa per tutti e due; se esce, al suo posto continua il computer.
 - **Eroi**: al livello 2 ogni razza può addestrare dalla base principale il suo eroe, uno solo, con un'aura che aiuta chi gli sta vicino. Se muore rinasce dalla base a metà prezzo.
 - La base ha due livelli. La popolazione massima è 55.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
@@ -73,6 +74,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Monsters**: every game two neutral monsters patrol an area of the field. They never attack bases; whoever deals the most damage to a monster when it falls gets 300 of their main resource.
 - **Day and night**: 5 minutes of day and 3 of night. At nightfall the day monsters withdraw and the night ones appear (Cave Bear or Giant Spider); a monster that withdraws comes back next cycle with the health it had left, a dead one stays dead.
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
+- **Play with a friend**: with the *🔗 Play with a friend* button one player creates the match and reads the 5-letter code to the other, who types it in and joins; then the host presses *Start together*. You play against each other on the same map, on computer, phone or tablet. If either player puts the game in the background the match pauses for both; if one leaves, the computer takes their place.
 - **Heroes**: at level 2 each race can train its hero from the main base, only one, with an aura that helps nearby units. If the hero dies it is reborn at the base for half the price.
 - Bases have two levels. Population cap is 55.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
