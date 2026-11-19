@@ -2656,7 +2656,7 @@ function buildPlaza(scene,team,race){const G=new THREE.Group();scene.add(G);cons
   const hq={durmagh:'fornace',thalren:'albero',vaelrith:'sala',scrappers:'discarica',tetsuryu:'kokyo',cogborn:'haven',submariner:'citadel'}[race];const hr=(BT[hq]&&(BT[hq].cr||BT[hq].r))||4;
   const sl=[];for(const k in SLOTS)SLOTS[k].forEach(([sx,sz])=>sl.push(L2W(team,sx,sz)));
   for(let k=0;k<9;k++){const a=(c.z>0?-Math.PI/2:Math.PI/2)+.55+k/9*(Math.PI*2-1.1);const r=hr+.95+(k%2)*.4;const px=Math.cos(a)*r,pz=Math.sin(a)*r;
-    if(sl.some(s=>Math.hypot(c.x+px-s.x,c.z+pz-s.z)<3.6))continue;PLAZA[race](G,px,pz,k);PLAZAOBS.push({x:c.x+px,z:c.z+pz,r:k%5===4?.85:.42});}
+    if(sl.some(s=>Math.hypot(c.x+px-s.x,c.z+pz-s.z)<3.6))continue;PLAZA[race](G,px,pz,k,c.x+px,c.z+pz);PLAZAOBS.push({x:c.x+px,z:c.z+pz,r:k%5===4?.85:.42});}
   bakeGroup(G);return G;}
 
 /* ================= ATMOSFERA: nuvole, dirigibili, uccelli, terre lontane ================= */
@@ -3213,8 +3213,14 @@ NODEM.kelp=NODEM.sap;
 DECALS.kelp=(g,r)=>{PT.rock(g,rng(15),32,32);for(let k=0;k<10;k++){const x=Math.floor(r()*32),y=Math.floor(r()*32);dot(g,x,y,k%2?'#4f7a3a':'#7fa86a');}};
 DECALS.submariner=g=>{PT.rock(g,rng(16),32,32);};
 NODEDRESS.kelp=G=>{addDecal(G,'kelp',2);ring(4,1.1,1.7,(x,z,k)=>{if(k%2)PROPS.sprite(G,DECO.tuft(1),x,z,.7,.6);else PROPS.rock(G,x,z,.8,false);});};
-DRESS.submariner=(G,r)=>{addDecal(G,'submariner',r+1.3);ring(5,r+.5,r+1.1,(x,z,k)=>{const t=k%5;if(t===0||t===3){if(!PROPS.px(G,'pipe',x,z,.9))PROPS.crate(G,x,z,1);}else if(t===1)PROPS.sprite(G,DECO.tuft(1),x,z,.7,.6);else if(t===2){if(!PROPS.px(G,'grock',x,z,.8))PROPS.crate(G,x,z,.8);}else PROPS.lamp(G,x,z,0x6fd6ff);});};
-PLAZA.submariner=(G,x,z,k)=>[()=>lampPost(G,x,z,0x6fd6ff),()=>stackCrates(G,x,z),()=>bench(G,x,z,k),()=>stackBarrels(G,x,z,1),()=>stall(G,x,z,k,0x2a6a6a,0x2e3034)][k%5]();
+/* 19 novembre (utente: "la bancarella, il lampione, le scatole, la panchina ed i bidoni li toglierei dall'acqua"): nel mare
+   gli edifici e la piazza dei Submariner usano gli oggetti del mare (corallo, scoglio, alghe, tubo, boa, relitto). Solo nel browser
+   (typeof Image): nel simulatore resta il ramo di prima, cosi' le partite restano identiche. Gli ostacoli della piazza (PLAZAOBS)
+   non cambiano: al posto della cosa di terra c'e' una cosa di mare dello stesso ingombro. */
+function subWet(wx,wz){return typeof Image!=='undefined'&&typeof EXTDECO!=='undefined'&&!!EXTDECO.mrock&&typeof seaAt==='function'&&wx!=null&&!!seaAt(wx,wz);}
+function subSea(G,set,x,z,w,k){const c=decoCanvas(set,k%EXTDECO[set].r.length);PROPS.sprite(G,c,x,z,w,w*c.height/c.width);}
+DRESS.submariner=(G,r,wx,wz)=>{G._wx=wx;G._wz=wz;addDecal(G,'submariner',r+1.3);ring(5,r+.5,r+1.1,(x,z,k)=>{if(subWet(G._wx,G._wz)){subSea(G,[ 'mcoral','mkelp','mrock','mpipe','mbuoy'][k%5],x,z,[.8,.95,.85,.75,.8][k%5],k);return;}const t=k%5;if(t===0||t===3){if(!PROPS.px(G,'pipe',x,z,.9))PROPS.crate(G,x,z,1);}else if(t===1)PROPS.sprite(G,DECO.tuft(1),x,z,.7,.6);else if(t===2){if(!PROPS.px(G,'grock',x,z,.8))PROPS.crate(G,x,z,.8);}else PROPS.lamp(G,x,z,0x6fd6ff);});};
+PLAZA.submariner=(G,x,z,k,wx,wz)=>subWet(wx,wz)?subSea(G,['mbuoy','mcoral','mrock','mkelp','mwreck'][k%5],x,z,[1.05,1.1,1.25,1.3,1.9][k%5],k):[()=>lampPost(G,x,z,0x6fd6ff),()=>stackCrates(G,x,z),()=>bench(G,x,z,k),()=>stackBarrels(G,x,z,1),()=>stall(G,x,z,k,0x2a6a6a,0x2e3034)][k%5]();
 /* disegni a codice di ripiego (simulatore, o se un'immagine non si carica): unita' simili delle altre razze */
 DRAW.labride=DRAW.raccoglitore;DRAW.tricheco=DRAW.cuirassier;DRAW.polipo=DRAW.arciere;DRAW.squalo=DRAW.lama;DRAW.granchio=DRAW.cuirassier;DRAW.balena=DRAW.sealed;DRAW.kraken=DRAW.sealed;
 
@@ -3608,7 +3614,7 @@ function spawnUnit(key,team,x,z){const T=TYPES[key],tm=teams[team];
   units.push(u);tm.stats.made++;return u;}
 function removeUnit(u){[u.sp,u.sh,u.ring,u.bg,u.fg].forEach(o=>{scene.remove(o);if(o.material&&o.material!==shadowMat)o.material.dispose();});if(u.cs){scene.remove(u.cs);u.cs.material.dispose();}u.tex.dispose();}
 function spawnBuilding(key,team,x,z,built){const T=BT[key];const m=extBuilding(key,team)||BUILD[T.race][T.model](team);const G=m.G;const CR=T.cr||T.r;
-  DRESS[T.race](G,T.r);blob(G,0,0,0,T.r*2.4,T.r*2,.45);m.spin.forEach(s=>animate(s[0]));m.bob.forEach(o=>animate(o));bakeGroup(G);
+  DRESS[T.race](G,T.r,x,z);blob(G,0,0,0,T.r*2.4,T.r*2,.45);m.spin.forEach(s=>animate(s[0]));m.bob.forEach(o=>animate(o));bakeGroup(G);
   G.position.set(x,gy(x,z),z);scene.add(G);
   let top=T.r*1.4+1.5;try{const bx=new THREE.Box3().setFromObject(G);if(isFinite(bx.max.y)&&bx.max.y>1)top=Math.min(bx.max.y+.6,9);}catch(e){}if(m.spriteTop)top=m.spriteTop;
   const ring=new THREE.Mesh(new THREE.RingGeometry(T.r+.2,T.r+.45,40),new THREE.MeshBasicMaterial({color:TEAMCOL[tci(team)],transparent:true,opacity:.9,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.set(x,gy(x,z)+.06,z);ring.visible=false;scene.add(ring);
@@ -4052,6 +4058,7 @@ function startGame(){clearWorld();if(typeof HSTAT!=='undefined')HSTAT=[{n:0,d:0,
   /* partita insieme (picks.net): due giocatori, nessuna IA, numeri casuali delle regole col seme comune, numeri delle cose da 0 */
   const NETG=!!picks.net;ME=NETG?picks.net.me:0;GRNG=NETG?rngS(picks.seed*13+7):null;if(NETG)uid=0;else LOCK.on=false;
   teams=[makeTeam(0,picks.me,picks.mode==='watch'),makeTeam(1,foeRace,!NETG)];if(picks.mode==='play'&&!NETG){const D=DIFF[picks.diff]||DIFF.normal;Object.assign(teams[1],{eco:D.eco,think:D.think,wave0:D.wave0,waveInc:D.waveInc,atk:D.atk,elMax:D.elMax,elT:D.elT});}
+  if(typeof seaReset==='function')seaReset();/* il mare serve gia' qui: gli edifici e la piazza dei Submariner nell'acqua si vestono con oggetti di mare */
   [0,1].forEach(t=>{const race=teams[t].race;const hp=L2W(t,0,0);spawnBuilding(RACE_B[race][0],t,hp.x,hp.z,true);
     const kind=RACES[race].node;BASE_NODES.forEach(([lx,lz])=>{const w=L2W(t,lx,lz);spawnNode(kind,w.x,w.z,1400);});});
   const usedK=teams.map(t=>RACES[t.race].node),swapK=usedK.includes('rice')?NODEKINDS.find(k=>!usedK.includes(k)):null;
