@@ -17,7 +17,7 @@ Questa è una **versione di prova per gli amici tester**: ogni commento è benve
 Il gioco è in **italiano e inglese**: la lingua si sceglie nella schermata iniziale (all'inizio segue quella del browser).
 
 ### Come si gioca
-Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le risorse della tua razza, costruisci, porta la base al livello 2 e **distruggi tutti gli edifici nemici** per vincere.
+Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le risorse della tua razza, costruisci, porta la base ai livelli 2 e 3 e **distruggi tutti gli edifici nemici** per vincere.
 
 - **Modalità**: *Gioca* (tu contro il computer) oppure *Osserva* (il computer contro sé stesso).
 - **Difficoltà**: Facile, Normale, Difficile.
@@ -28,7 +28,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Nebbia di guerra**: vedi solo ciò che vedono le tue unità e i tuoi edifici, e lo stesso vale per il computer.
 - **Gioca con un amico**: dal pulsante *🔗 Gioca con un amico* uno crea la partita e detta il codice di 5 lettere all'altro, che lo scrive e si unisce; poi l'host preme *Inizia insieme*. Si gioca uno contro l'altro sulla stessa mappa, su computer, telefono o tablet. Se uno dei due mette il gioco in secondo piano la partita va in pausa per tutti e due; se esce, al suo posto continua il computer.
 - **Eroi**: al livello 2 ogni razza può addestrare dalla base principale il suo eroe, uno solo, con un'aura che aiuta chi gli sta vicino. Se muore rinasce dalla base a metà prezzo.
-- La base ha due livelli. La popolazione massima è 55.
+- **Livello 3**: la base ha tre livelli. Al livello 3 la popolazione massima passa da 55 a 65, si sbloccano le élite e un edificio nuovo per ogni razza con le ricerche di secondo grado (Armi II, Protezioni II) e una ricerca speciale.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
 
 ### Comandi
@@ -38,7 +38,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 
 **Tiratori**: da fermi sparano solo a chi hanno a tiro e non inseguono; se li colpiscono da fuori tiro si avvicinano. Per farli inseguire, ordina di attaccare un nemico. Nei gruppi misti il corpo a corpo va davanti. I tasti **Tiratori** e **Mischia** selezionano tutte le unità di quel tipo.
 
-### Le sei razze
+### Le sette razze
 | Razza | Chi sono | Risorse | Élite | Eroe |
 |---|---|---|---|---|
 | **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator | Ardun Doran: più danno a Fucilieri, Mortai, Lanciafiamme e Magminator |
@@ -47,6 +47,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 | **Scrappers** | Goblin rottamai chimici | Rottami e fanghi tossici | Krankenstein | Ruttam: rottami da ogni nemico che cade vicino a lui |
 | **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō | Daimyo Oda: più danno a Samurai e Ronin |
 | **Cogborn** | Automi fuggiti dai nani, si riparano tra loro | Lega antica ed Etere | Automa Engine | The Clockwork: più vita ai Cogborn vicini |
+| **Submariner** | Pesci mutati dall'inquinamento, in scafandro; la loro base nasce in riva al mare e dentro la cupola d'acqua si curano | Alghe | Kraken | Admiral Morvane: più danno a Granchi e Balene |
 
 ### Se il gioco va a scatti
 Nel menu di pausa trovi **Qualità grafica** (Alta, Media, Bassa). Il gioco la sceglie da solo e la abbassa se serve. Con **Info prestazioni** → *Copia i dati* puoi mandarci i numeri del tuo dispositivo: ci aiutano molto.
@@ -65,7 +66,7 @@ This is a **test build for friends**: all feedback is welcome.
 The game is in **English and Italian**: pick the language on the start screen (it first follows your browser's language).
 
 ### How to play
-You start with your main base and five workers already gathering. Collect your race's resources, build, upgrade your base to level 2 and **destroy every enemy building** to win.
+You start with your main base and five workers already gathering. Collect your race's resources, build, upgrade your base to levels 2 and 3 and **destroy every enemy building** to win.
 
 - **Mode**: *Play* (you against the computer) or *Watch* (computer against computer).
 - **Difficulty**: Easy, Normal, Hard.
@@ -76,7 +77,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Fog of war**: you only see what your units and buildings see, and the same goes for the computer.
 - **Play with a friend**: with the *🔗 Play with a friend* button one player creates the match and reads the 5-letter code to the other, who types it in and joins; then the host presses *Start together*. You play against each other on the same map, on computer, phone or tablet. If either player puts the game in the background the match pauses for both; if one leaves, the computer takes their place.
 - **Heroes**: at level 2 each race can train its hero from the main base, only one, with an aura that helps nearby units. If the hero dies it is reborn at the base for half the price.
-- Bases have two levels. Population cap is 55.
+- **Level 3**: bases have three levels. At level 3 the population cap goes from 55 to 65, elites unlock, and each race gets a new building with second-tier research (Weapons II, Armor II) and a special upgrade.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
 
 ### Controls
@@ -86,7 +87,7 @@ You start with your main base and five workers already gathering. Collect your r
 
 **Ranged units**: when standing still they only fire at enemies in range and don't chase; if hit from out of range they move closer. To make them chase, order them to attack an enemy. In mixed groups, melee units go in front. The **Ranged** and **Melee** buttons select all units of that kind.
 
-### The six races
+### The seven races
 | Race | Who they are | Resources | Elite | Hero |
 |---|---|---|---|---|
 | **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator | Ardun Doran: more damage for Riflemen, Mortars, Flamethrowers and Magminators |
@@ -95,6 +96,7 @@ You start with your main base and five workers already gathering. Collect your r
 | **Scrappers** | Chemical scrapper goblins | Scrap and toxic sludge | Krankenstein | Ruttam: scrap from every enemy that falls near him |
 | **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō | Daimyo Oda: more damage for Samurai and Ronin |
 | **Cogborn** | Automatons that escaped the dwarves and repair each other | Ancient Alloy and Ether | Engine Automaton | The Clockwork: more health for nearby Cogborn |
+| **Submariner** | Fish mutated by pollution, in diving suits; their base starts by the sea and they heal inside their water dome | Kelp | Kraken | Admiral Morvane: more damage for Crabs and Whales |
 
 ### If the game stutters
 The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
