@@ -41,6 +41,7 @@ html,body{height:100%}
 body{margin:0;background:var(--oil);color:var(--bone);font-family:var(--f-ui);font-size:16px;overflow:hidden;-webkit-tap-highlight-color:transparent}
 #app{position:fixed;inset:0;overflow:hidden;background:var(--oil)}
 #game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#veil{position:absolute;inset:0;pointer-events:none;opacity:0}
 #box{position:absolute;border:1px dashed var(--brass);background:rgba(217,164,65,.08);pointer-events:none}
 .plate{background:var(--plate);border:1px solid var(--line);clip-path:var(--chamfer);
   background-image:radial-gradient(circle at 6px 6px,rgba(217,164,65,.55) 1.2px,transparent 1.8px),radial-gradient(circle at calc(100% - 6px) calc(100% - 6px),rgba(217,164,65,.55) 1.2px,transparent 1.8px)}
@@ -171,6 +172,7 @@ button.primary:hover{background:#e8b65a}
 
 <div id="app">
   <canvas id="game" aria-label="Campo di battaglia"></canvas>
+  <div id="veil"></div>
   <div id="box" hidden></div>
   <div id="timl"></div>
   <header id="top">
@@ -3360,7 +3362,7 @@ const DPR=Math.min(window.devicePixelRatio||1,2);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x6a7068);scene.fog=new THREE.FogExp2(0x8a8070,.009);
 const camera=new THREE.PerspectiveCamera(30,1,.5,400);
 const cam={tx:0,tz:14,dist:42,pitch:THREE.MathUtils.degToRad(46)};
-function placeCamera(){const z=Math.max(0,Math.min(1,(34-cam.dist)/16));const p=cam.pitch-THREE.MathUtils.degToRad(8)*z;camera.position.set(cam.tx,Math.sin(p)*cam.dist,cam.tz+Math.cos(p)*cam.dist);camera.lookAt(cam.tx,0,cam.tz);scene.fog.density=.3/(cam.dist+14);}
+function placeCamera(){const z=Math.max(0,Math.min(1,(34-cam.dist)/16));const p=cam.pitch-THREE.MathUtils.degToRad(8)*z;camera.position.set(cam.tx,Math.sin(p)*cam.dist,cam.tz+Math.cos(p)*cam.dist);camera.lookAt(cam.tx,0,cam.tz);scene.fog.density=.3/(cam.dist+14)*(typeof MET!=='undefined'?MET.dm:1);}
 scene.add(new THREE.HemisphereLight(0xa8bcd8,0x4a3020,.5));
 const sun=new THREE.DirectionalLight(0xffd6a6,1.32);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0008;sun.shadow.normalBias=.02;scene.add(sun);scene.add(sun.target);
 let shadowHalf=0;
@@ -4226,6 +4228,112 @@ function dnDark(t){const c=t%dnLen(),f=DN.fade;let k;
   return k*k*(3-2*k);}
 /* numero del ciclo (0 = primo giorno e prima notte) */
 
+/* ================= METEO (20 novembre, scelte dell'utente) =================
+   - Tipi: smog industriale, pioggia legata al fiume (acida sui fanghi, cenere sulla lava, pioggia normale sull'acqua),
+     temporale (la pioggia del fiume + lampi e tuoni), neve (non sulla lava).
+   - SOLO ASPETTO: non cambia vista, velocita' o danni. Niente Math.random e nessuna chiamata ai generatori della partita:
+     il caso viene da rng propri (le partite a seme restano identiche).
+   - Arriva ogni tanto: eventi di 1-2 minuti alternati al sereno. Il calendario dipende solo dal seme della mappa e dal
+     tempo di gioco (now), quindi e' uguale per tutti e due i giocatori nel multiplayer.
+   - Qualita' Bassa: meno particelle (MET.N). */
+const MET={N:{alta:6000,media:3600,bassa:1400},FADE:10,
+  /* nebbia e luce di base (rts.js): FogExp2 0x8a8070, densita' .3/(distanza+14) da placeCamera (MET.dm la moltiplica), sole 1,32, cielo .5 */
+  base:null,dm:1,plan:null,planSeed:null,force:null,obj:null,mode:null,k:0,flash:0,boltT:6,thunder:[],r:rng(9091),snd:null};
+/* aspetto di ogni tipo: colore della nebbia, quanto si infittisce (dm), quanta luce resta, particelle */
+const METTYPE={
+  smog:{fog:0xa39a62,dm:1.85,sun:.78,part:null,veil:[150,135,70,.30]},
+  acida:{fog:0x75806a,dm:1.5,sun:.66,part:'rain',col:0xc8e070,op:.6,veil:[90,105,60,.16]},
+  pioggia:{fog:0x6f7a84,dm:1.5,sun:.66,part:'rain',col:0xc4d6ea,op:.55,veil:[70,85,100,.16]},
+  cenere:{fog:0x6e6660,dm:1.6,sun:.62,part:'flake',col:0xaaa49c,op:.95,size:.5,veil:[95,88,80,.2],fall:3.2,sway:.8},
+  neve:{fog:0xc4ccd4,dm:1.4,sun:.8,part:'flake',col:0xffffff,op:1,size:.46,veil:[205,215,225,.16],fall:2.2,sway:1.1},
+  temporale:{fog:0x5a6068,dm:1.7,sun:.5,part:null,bolts:1,veil:[40,48,60,.22]}};
+/* tipi possibili per fiume; 'pioggia' = quella del fiume */
+const METRIV={sludge:{rain:'acida',list:['smog','pioggia','temporale','neve']},lava:{rain:'cenere',list:['smog','pioggia','temporale']},
+  water:{rain:'pioggia',list:['smog','pioggia','temporale','neve']}};
+/* calendario della partita: [{a:inizio,b:fine,type}] fino a 40 minuti. Primo evento dopo 150-270 s, poi sereno 180-330 s */
+function metPlan(seed,riv){const R=rng(seed*131+17),L=(METRIV[riv]||METRIV.water).list,out=[];let t=150+R()*120,prev=null;
+  while(t<2400){const d=60+R()*60;let ty=L[Math.floor(R()*L.length)];if(ty===prev)ty=L[(L.indexOf(ty)+1)%L.length];
+    out.push({a:t,b:t+d,type:ty});prev=ty;t+=d+180+R()*150;}return out;}
+/* evento in corso e forza (0..1, con 10 s di entrata e uscita) */
+function metNow(t){if(MET.force)return {type:MET.force,k:1};
+  if(typeof MG==='undefined'||MG.seed==null)return null;
+  if(MET.planSeed!==MG.seed+'/'+MG.riv){MET.plan=metPlan(MG.seed,MG.riv);MET.planSeed=MG.seed+'/'+MG.riv;}
+  for(const e of MET.plan){if(t<e.a)break;if(t<e.b){const f=MET.FADE,k=Math.min(1,(t-e.a)/f,(e.b-t)/f);return {type:e.type,k:k*k*(3-2*k)};}}
+  return null;}
+/* il tipo vero da disegnare: 'pioggia' diventa acida/cenere/normale secondo il fiume */
+function metLook(type){if(type==='pioggia')return (METRIV[MG.riv]||METRIV.water).rain;return type;}
+function metRainOf(){return (METRIV[MG.riv]||METRIV.water).rain;}
+function metTex(){return canv('metflake',(g,w,h)=>{const gr=g.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.5,'rgba(255,255,255,.8)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,w,h);},16,16);}
+/* particelle: una sola geometria per tipo (pioggia = segmenti, fiocchi = punti), riusata a ogni evento */
+function metBuild(kind){const n=MET.N.alta,R=MET.r;
+  if(kind==='rain'){const p=new Float32Array(n*6),s=new Float32Array(n*4);for(let i=0;i<n;i++){s[i*4]=R();s[i*4+1]=R();s[i*4+2]=R();s[i*4+3]=.8+R()*.5;}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
+    const m=new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.5,depthWrite:false,fog:true});
+    const o=new THREE.LineSegments(g,m);o.frustumCulled=false;o.renderOrder=4;o.userData={seed:s,n};return o;}
+  const p=new Float32Array(n*3),s=new Float32Array(n*4);for(let i=0;i<n;i++){s[i*4]=R();s[i*4+1]=R();s[i*4+2]=R();s[i*4+3]=R()*6.283;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  const m=new THREE.PointsMaterial({color:0xffffff,size:.3,map:new THREE.CanvasTexture(metTex()),transparent:true,depthWrite:false,alphaTest:.02,fog:true});
+  const o=new THREE.Points(g,m);o.frustumCulled=false;o.renderOrder=4;o.userData={seed:s,n};return o;}
+function metHemi(){if(MET.hemi===undefined)MET.hemi=scene.children.find(o=>o.isHemisphereLight)||null;return MET.hemi;}
+/* scatola delle particelle intorno al punto inquadrato: larga quanto la vista, si sposta con la telecamera (le particelle
+   "girano" dentro la scatola, quindi non si vedono buchi quando si scorre la mappa) */
+function metPlace(o,T,t,n){const u=o.userData,s=u.seed,a=o.geometry.attributes.position.array,
+  W=Math.max(36,cam.dist*1.7),D=Math.max(30,cam.dist*1.5),H=Math.min(30,8+cam.dist*.55),x0=cam.tx-W/2,z0=cam.tz-D*.62;
+  const wrap=v=>v-Math.floor(v);
+  if(o.isLineSegments){const sp=T.heavy?34:27,len=T.heavy?1.6:1.3,dx=T.heavy?.34:.18;
+    for(let i=0;i<n;i++){const j=i*4,x=x0+wrap(s[j]+t*dx*.5/W)*W,z=z0+s[j+1]*D,y=H-wrap(s[j+2]+t*sp*s[j+3]/H)*H,k=i*6;
+      a[k]=x;a[k+1]=y;a[k+2]=z;a[k+3]=x-dx*len;a[k+4]=y+len*s[j+3];a[k+5]=z;}}
+  else{for(let i=0;i<n;i++){const j=i*4,ph=s[j+3],x=x0+wrap(s[j]+Math.sin(t*.7+ph)*T.sway/W+t*.25/W)*W,z=z0+wrap(s[j+1]+Math.cos(t*.5+ph)*T.sway*.5/D)*D,
+      y=H-wrap(s[j+2]+t*T.fall*(.7+.3*Math.sin(ph))/H)*H,k=i*3;a[k]=x;a[k+1]=y;a[k+2]=z;}}
+  o.geometry.attributes.position.needsUpdate=true;o.geometry.setDrawRange(0,o.isLineSegments?n*2:n);}
+/* lampo: luce che sale di colpo e trema due volte; il tuono arriva dopo 0,6-2,5 s */
+function metBolt(){MET.flash=1;MET.flash2=.18+MET.r()*.12;MET.thunder.push(.6+MET.r()*1.9);}
+function metThunder(){if(typeof SND==='undefined'||!SND.ctx||!SND.brown)return;const c=SND.ctx,t0=c.currentTime;
+  const src=c.createBufferSource();src.buffer=SND.brown;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(320,t0);lp.frequency.exponentialRampToValueAtTime(70,t0+3);
+  const g=c.createGain();g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.55,t0+.12);g.gain.exponentialRampToValueAtTime(.001,t0+3.6);
+  src.connect(lp);lp.connect(g);g.connect(SND.amb||SND.out);src.start(t0,MET.r()*2);src.stop(t0+3.8);}
+/* fruscio continuo della pioggia (rumore filtrato), volume = forza dell'evento */
+function metRainSnd(v){if(typeof SND==='undefined'||!SND.ctx||!SND.white)return;const c=SND.ctx;
+  if(!MET.snd){const s=c.createBufferSource();s.buffer=SND.white;s.loop=true;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=900;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;const g=c.createGain();g.gain.value=0;s.connect(hp);hp.connect(lp);lp.connect(g);g.connect(SND.amb||SND.out);s.start();MET.snd=g;}
+  MET.snd.gain.setTargetAtTime(v,c.currentTime,.4);}
+/* chiamata a ogni fotogramma da frame() (ui.js); vdt = tempo che scorre a schermo (0 in pausa) */
+function meteoTick(rdt,vdt){if(!(sun.intensity>0))return; /* simulatore senza grafica */
+  if(!MET.base)MET.base={fc:scene.fog.color.getHex(),sun:sun.intensity,hemi:metHemi()?metHemi().intensity:.5};
+  const B=MET.base,cur=gameOn?metNow(now):null,k=cur?cur.k:0,type=cur?metLook(cur.type):null,T=type?METTYPE[type]:null;
+  /* il temporale usa le particelle della pioggia del fiume */
+  const PT=T&&T.part?T:(type==='temporale'?METTYPE[metRainOf()]:null);
+  MET.t=(MET.t||0)+vdt;
+  /* nebbia e luce */
+  const fc=new THREE.Color(B.fc);if(T)fc.lerp(new THREE.Color(T.fog),k);scene.fog.color.copy(fc);
+  MET.dm=1+(T?(T.dm-1)*k:0);
+  let light=1-(T?(1-T.sun)*k:0);
+  if(T&&T.bolts&&k>.6&&vdt>0){MET.boltT-=vdt;if(MET.boltT<=0){metBolt();MET.boltT=4+MET.r()*7;}}
+  if(MET.flash>0){const f=MET.flash;MET.flash=Math.max(0,f-rdt*4.5);const flick=f>.55&&f<.75?.35:1;light+=f*flick*.3;
+    if(MET.flash===0&&MET.flash2>0){MET.flash=MET.flash2;MET.flash2=0;}}
+  for(let i=MET.thunder.length-1;i>=0;i--){MET.thunder[i]-=rdt;if(MET.thunder[i]<=0){MET.thunder.splice(i,1);metThunder();}}
+  sun.intensity=B.sun*light;const h=metHemi();if(h)h.intensity=B.hemi*(light+(MET.flash>0?MET.flash*1.6:0));
+  /* velo sullo schermo (sotto i pulsanti): colore del tempo, piu' forte ai bordi; il lampo lo fa diventare bianco-azzurro */
+  if(MET.veil===undefined)MET.veil=document.getElementById?document.getElementById('veil'):null;
+  if(MET.veil){const v=T&&T.veil,a=v?v[3]*k:0,f=MET.flash>0?MET.flash:0,key=(v?v.join():'')+'|'+a.toFixed(3)+'|'+f.toFixed(2);
+    if(key!==MET.veilKey){MET.veilKey=key;const c=v||[0,0,0];
+      if(a<=0&&f<=0)MET.veil.style.opacity='0';
+      else{MET.veil.style.opacity='1';const fw=Math.min(.45,f*.5),mix=(x,y)=>Math.round(x+(y-x)*fw/Math.max(.001,fw+a));
+        const r=mix(c[0],215),g=mix(c[1],230),b=mix(c[2],255),al=Math.min(.6,a+fw);
+        MET.veil.style.background='radial-gradient(ellipse at 50% 45%, rgba('+r+','+g+','+b+','+(al*.55).toFixed(3)+') 0%, rgba('+r+','+g+','+b+','+al.toFixed(3)+') 100%)';}}}
+  /* particelle */
+  const kind=PT?PT.part:null;
+  if(MET.obj&&MET.mode!==kind){MET.obj.visible=false;}
+  if(kind&&k>0){if(!MET[kind])MET[kind]=metBuild(kind);const o=MET[kind];if(!o.parent)scene.add(o);o.visible=true;MET.obj=o;MET.mode=kind;
+    const n=Math.round((MET.N[qLevel]||MET.N.media)*(type==='temporale'?1:.75)*Math.min(1,k*1.3));
+    o.material.color.setHex(PT.col);o.material.opacity=PT.op*Math.min(1,k*1.5);if(o.isPoints)o.material.size=PT.size;
+    metPlace(o,type==='temporale'?Object.assign({},PT,{heavy:1}):PT,MET.t,n);}
+  else if(MET.obj)MET.obj.visible=false;
+  metRainSnd(PT&&PT.part==='rain'&&k>0?(type==='temporale'?.09:.05)*k:0);
+  MET.k=k;MET.type=type;}
+/* per le prove: METEO forzato ('smog','pioggia','temporale','neve', o null) */
+function meteoForce(t){MET.force=t||null;}
+
 /* ================= MOSTRI NEUTRALI (9 novembre, ramo `mostri`, decisioni dell'utente) =================
    - Due guardiani organici, uno davanti a ciascuno dei 2 ponti, dello stesso tipo nella stessa partita:
      fiume di fanghi -> Spirito dei fanghi, fiume di lava -> Bestia di lava, fiume d'acqua -> uno dei due a caso (dal seme della mappa).
@@ -4928,7 +5036,7 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   UP.set(0,1,0).applyQuaternion(camera.quaternion);
   const vdt=rdt*(speed||0);
   fogTick(rdt);for(const u of units)syncUnit(u,speed?vdt:0);for(const b of blds)syncBld(b);drawTimers();
-  updateAtmosphere(clock,rdt);sndTick(rdt);updateMap2(clock,rdt);seaUpdate(rdt);updateFx(rdt*Math.max(1,speed));updateMarkers(rdt);updateSmoke(rdt);updateEmbers(rdt,clock);updateFireflies(clock);updateKeys(rdt);animateBases(clock,rdt*(speed?1:0));
+  updateAtmosphere(clock,rdt);meteoTick(rdt,vdt?rdt:0);sndTick(rdt);updateMap2(clock,rdt);seaUpdate(rdt);updateFx(rdt*Math.max(1,speed));updateMarkers(rdt);updateSmoke(rdt);updateEmbers(rdt,clock);updateFireflies(clock);updateKeys(rdt);animateBases(clock,rdt*(speed?1:0));
   lavaT+=rdt;if(lavaT>.12){lavaT=0;paintLava(clock);lavaTex.needsUpdate=true;}
   if(!gameOn&&!reduceMotion){cam.tx=Math.sin(clock*.06)*20;cam.tz=Math.sin(clock*.045)*14;cam.dist=50;}
   {const zb=cam.dist<26?1.15:1;if(zb!==zoomBoost){zoomBoost=zb;resize();}}
