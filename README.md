@@ -29,7 +29,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 - **Gioca con un amico**: dal pulsante *🔗 Gioca con un amico* uno crea la partita e detta il codice di 5 lettere all'altro, che lo scrive e si unisce; poi l'host preme *Inizia insieme*. Si gioca uno contro l'altro sulla stessa mappa, su computer, telefono o tablet. Se uno dei due mette il gioco in secondo piano la partita va in pausa per tutti e due; se esce, al suo posto continua il computer.
 - **Eroi**: al livello 2 ogni razza può addestrare dalla base principale il suo eroe, uno solo, con un'aura che aiuta chi gli sta vicino. Se muore rinasce dalla base a metà prezzo.
 - **Livello 3**: la base ha tre livelli. Al livello 3 la popolazione massima passa da 55 a 65, si sbloccano le élite e un edificio nuovo per ogni razza con le ricerche di secondo grado (Armi II, Protezioni II) e una ricerca speciale.
-- **Unità volanti**: i Durmagh, dal livello 2, costruiscono il Nido dei rotori e addestrano il **Girocottero a magma**, che vola sopra fiumi, ostacoli e dislivelli e lancia colpi di magma ad area. Lo colpiscono solo le torri e le unità che tirano da lontano: il corpo a corpo no.
+- **Unità volanti**: i Durmagh, dal livello 2, costruiscono il Nido dei rotori e addestrano il **Girocottero a magma**, che vola sopra fiumi, ostacoli e dislivelli e lancia colpi di magma ad area. I Sootwings, dal livello 2, hanno il **Gufo con aliante**, che plana sopra il campo e sgancia bombe ad area. Li colpiscono solo le torri e le unità che tirano da lontano: il corpo a corpo no.
 - **Nel menu** scegli anche la qualità grafica, la visuale (Vicina, Normale, Lontana) e i suoni (Alti, Bassi, Spenti).
 
 ### Comandi
@@ -39,7 +39,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 
 **Tiratori**: da fermi sparano solo a chi hanno a tiro e non inseguono; se li colpiscono da fuori tiro si avvicinano. Per farli inseguire, ordina di attaccare un nemico. Nei gruppi misti il corpo a corpo va davanti. Quando mandi un gruppo verso un punto o un edificio, cammina alla velocità del più lento, così arriva tutto insieme. I tasti **Tiratori** e **Mischia** selezionano tutte le unità di quel tipo.
 
-### Le sette razze
+### Le otto razze
 | Razza | Chi sono | Risorse | Élite | Eroe |
 |---|---|---|---|---|
 | **Durmagh** | Nani vulcanici | Magma e Black Oil | Magminator | Ardun Doran: più danno a Fucilieri, Mortai, Lanciafiamme e Magminator |
@@ -49,6 +49,7 @@ Parti con la base principale e cinque lavoratori già al lavoro. Raccogli le ris
 | **Tetsuryū** | Gli ultimi umani di Untum, popolo dell'est | Riso | Fudō Myōō | Daimyo Oda: più danno a Samurai e Ronin |
 | **Cogborn** | Automi fuggiti dai nani, si riparano tra loro | Lega antica ed Etere | Automa Engine | The Clockwork: più vita ai Cogborn vicini |
 | **Submariner** | Pesci mutati dall'inquinamento, in scafandro; la loro base nasce in riva al mare e dentro la cupola d'acqua si curano | Alghe | Kraken | Admiral Morvane: più danno a Granchi e Balene |
+| **Sootwings** | Corvi mutati dallo smog, spazzini del cielo; la loro base è un dirigibile ancorato che si può sganciare e spostare | Trinkets | Roc | Matron Muninn: le unità vicine si muovono più veloci |
 
 ### Se il gioco va a scatti
 Nel menu di pausa trovi **Qualità grafica** (Alta, Media, Bassa). Il gioco la sceglie da solo e la abbassa se serve. Con **Info prestazioni** → *Copia i dati* puoi mandarci i numeri del tuo dispositivo: ci aiutano molto.
@@ -79,7 +80,7 @@ You start with your main base and five workers already gathering. Collect your r
 - **Play with a friend**: with the *🔗 Play with a friend* button one player creates the match and reads the 5-letter code to the other, who types it in and joins; then the host presses *Start together*. You play against each other on the same map, on computer, phone or tablet. If either player puts the game in the background the match pauses for both; if one leaves, the computer takes their place.
 - **Heroes**: at level 2 each race can train its hero from the main base, only one, with an aura that helps nearby units. If the hero dies it is reborn at the base for half the price.
 - **Level 3**: bases have three levels. At level 3 the population cap goes from 55 to 65, elites unlock, and each race gets a new building with second-tier research (Weapons II, Armor II) and a special upgrade.
-- **Flying units**: from level 2 the Durmagh can build the Rotor Nest and train the **Magma Gyrocopter**, which flies over rivers, obstacles and cliffs and fires area-damage magma shots. Only towers and ranged units can hit it: melee units can't.
+- **Flying units**: from level 2 the Durmagh can build the Rotor Nest and train the **Magma Gyrocopter**, which flies over rivers, obstacles and cliffs and fires area-damage magma shots. From level 2 the Sootwings have the **Glider Owl**, which glides over the field and drops area bombs. Only towers and ranged units can hit them: melee units can't.
 - **In the menu** you can also choose graphics quality, view (Close, Normal, Far) and sounds (Loud, Quiet, Off).
 
 ### Controls
@@ -89,7 +90,7 @@ You start with your main base and five workers already gathering. Collect your r
 
 **Ranged units**: when standing still they only fire at enemies in range and don't chase; if hit from out of range they move closer. To make them chase, order them to attack an enemy. In mixed groups, melee units go in front. When you send a group to a spot or a building, it marches at the pace of its slowest unit so it arrives together. The **Ranged** and **Melee** buttons select all units of that kind.
 
-### The seven races
+### The eight races
 | Race | Who they are | Resources | Elite | Hero |
 |---|---|---|---|---|
 | **Durmagh** | Volcanic dwarves | Magma and Black Oil | Magminator | Ardun Doran: more damage for Riflemen, Mortars, Flamethrowers and Magminators |
@@ -99,6 +100,7 @@ You start with your main base and five workers already gathering. Collect your r
 | **Tetsuryū** | The last humans of Untum, a people of the east | Rice | Fudō Myōō | Daimyo Oda: more damage for Samurai and Ronin |
 | **Cogborn** | Automatons that escaped the dwarves and repair each other | Ancient Alloy and Ether | Engine Automaton | The Clockwork: more health for nearby Cogborn |
 | **Submariner** | Fish mutated by pollution, in diving suits; their base starts by the sea and they heal inside their water dome | Kelp | Kraken | Admiral Morvane: more damage for Crabs and Whales |
+| **Sootwings** | Crows mutated by the smog, scavengers of the sky; their base is an anchored airship that can be unanchored and moved | Trinkets | Roc | Matron Muninn: nearby units move faster |
 
 ### If the game stutters
 The pause menu has **Graphics quality** (High, Medium, Low). The game picks one automatically and lowers it when needed. **Performance info** → *Copy data* lets you send us your device's numbers, which helps a lot.
