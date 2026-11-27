@@ -416,7 +416,7 @@ const EN={
   'Serve il livello {0}':'Requires level {0}','Serve prima: {0}':'Requires first: {0}','Al massimo {0} accoliti per Santuario':'Up to {0} acolytes per Sanctuary','Al massimo {0} di questo tipo':'Up to {0} of this type','Rinascita':'Rebirth','Risorse insufficienti':'Not enough resources','Edificio in costruzione':'Building under construction','Coda piena':'Queue full',
   'Popolazione al massimo: sali di livello':'Population cap reached: level up','Livello massimo':'Maximum level','Già in corso':'Already in progress','Già completata':'Already completed','Ricerca non disponibile':'Research not available',
   'Base al livello {0}: nuovi edifici e unità disponibili':'Base at level {0}: new buildings and units available','{0} contro {1}':'{0} vs {1}','Osservi: {0} contro {1}':'Watching: {0} vs {1}',
-  'Avversario estratto: {0}. ':'Opponent drawn: {0}. ','I lavoratori sono già al lavoro sui giacimenti':'Your workers are already at work on the resource nodes',
+  'Avversario estratto: {0}. ':'Opponent drawn: {0}. ','Mappa: {0}. ':'Map: {0}. ','I lavoratori sono già al lavoro sui giacimenti':'Your workers are already at work on the resource nodes',
   'Vincono i {0}':'The {0} win','Pareggio':'Draw','Sconfitta':'Defeat',
   'Partita tra due IA conclusa: confronta i numeri qui sotto per valutare il bilanciamento.':'AI vs AI match over: compare the numbers below to judge the balance.',
   'La base nemica è caduta.':'The enemy base has fallen.','La tua base è caduta.':'Your base has fallen.',
@@ -445,10 +445,10 @@ const EN_DATA={
     lavabeast:{name:'Lava Beast',info:'Beast of basalt and molten lava. It roams its own area of the field and never attacks bases: more fragile, but it bites and burns hard. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
     cavebear:{name:'Cave Bear',info:'Huge cave bear that only comes out at night. It roams its own area of the field and never attacks bases: slow and tough, it strikes with heavy paw swipes. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
     giantspider:{name:'Giant Spider',info:'Hunting spider as big as a horse that only comes out at night. It roams its own area of the field and never attacks bases: fragile but very fast, it bites nonstop. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
-    illguard:{name:'Capital Warden',info:'Diesel guard automaton of the old capital, with a shield and an electric baton: no mind, only the order to defend the square. It roams its own area of the citadel and never attacks bases: slow and very heavily armored. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
-    illsweeper:{name:'Street Sweeper',info:'Old street-cleaning vehicle gone haywire: its spinning brushes hit everything around. It roams its own area of the citadel and never attacks bases: it strikes in an area. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
-    illrat:{name:'Giant Black Oil Rat',info:'Sewer rat as big as a pony, soaked in Black Oil; it only comes out at night. It roams its own area of the citadel and never attacks bases: fragile but very fast, it bites nonstop. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
-    illbat:{name:'Bell-Tower Bat',info:'Huge bat from the capital\'s bell towers; it only comes out at night. It roams its own area of the citadel and never attacks bases. It flies when it moves: in flight only towers and shooters can hit it; it lands to bite, and there everyone can hit it. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
+    illguard:{name:'Capital Warden',info:'Diesel guard automaton of the old capital, with a shield and an electric baton: no mind, only the order to defend the square. It roams its own area between the walls and a base and never attacks bases: slow and very heavily armored. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
+    illsweeper:{name:'Street Sweeper',info:'Old street-cleaning vehicle gone haywire: its spinning brushes hit everything around. It roams its own area between the walls and a base and never attacks bases: it strikes in an area. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
+    illrat:{name:'Giant Black Oil Rat',info:'Sewer rat as big as a pony, soaked in Black Oil; it only comes out at night. It roams its own area between the walls and a base and never attacks bases: fragile but very fast, it bites nonstop. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
+    illbat:{name:'Bell-Tower Bat',info:'Huge bat from the capital\'s bell towers; it only comes out at night. It roams its own area between the walls and a base and never attacks bases. It flies when it moves: in flight only towers and shooters can hit it; it lands to bite, and there everyone can hit it. When it falls, the side that dealt it the most damage gets 300 of their main resource.'},
     cuirassier:{name:'Cuirassier',info:'Armored dwarf with shield and piston hammer: low damage, but holds the front line.'},
     lanciafiamme:{name:'Flamethrower',info:'Area fire that ignores part of the armor. Great against groups.'},
     mortaio:{name:'Tracked Mortar',info:'Long-range artillery, devastating against buildings. Cannot fire at close range.'},
@@ -1272,7 +1272,7 @@ function onFord(x){return CROSS.fords.some(f=>Math.abs(x-f)<=2.05);}
    (come i 2 ponti) e al centro la CITTADELLA: anello di mura |x|<RX, |z|<RZ con una breccia a nord e una a sud (via centrale, CROSS.fords=[0]).
    Brecce chiuse all'inizio da un blocco da rompere. ILL.on=false: spenta finche' non e' pronta (le mappe di oggi non cambiano).
    ILL.force (prove): true/false per obbligare il sorteggio. */
-const ILL={on:false,force:null,RX:24,RZ:12,midOpen:true};
+const ILL={on:true,force:null,RX:24,RZ:12,midOpen:true};
 function illRing(x,z,m){return !!MG.ill&&Math.abs(x)<ILL.RX+m&&Math.abs(z)<ILL.RZ+m;}
 /* tessera (centro dispari) che fa parte delle mura; le brecce sono larghe 2 tessere (4 caselle, come i ponti) */
 function illWallTile(x,z){if(!MG.ill)return false;const ax=Math.abs(x),az=Math.abs(z),RX=ILL.RX,RZ=ILL.RZ;
@@ -2028,7 +2028,7 @@ const TYPES={
   druido:U({name:'Druido delle radici',lvl:2,cost:[120,0],pop:2,time:24,hp:115,dps:6,rng:5,spd:3.2,cd:1.2,proj:'thorn',slow:{f:.35,t:2},heal:{r:4.5,hps:3},info:'Cura gli alleati vicini (3 vita/s). I suoi rovi rallentano, di più le unità corazzate.'}),
   custode:U({name:'Custode della foresta',lvl:3,cost:[400,0],pop:6,time:55,hp:1100,dps:28,rng:1.6,spd:2.6,arm:.2,cd:1.4,regen:6,aoe:1.3,bldg:1.5,big:1,elite:1,info:'Antico albero guardiano. Rigenera 6 vita/s.'}),
   borseggiatore:U({name:'Borseggiatore',cost:[50,0],time:12,hp:70,dps:6,spd:3.6,cd:.9,worker:{carry:8,gt:1.9},steal:.5,bldg:.5,info:'Raccoglie oro e costruisce. Quando colpisce il nemico gli ruba oro.'}),
-  lama:U({name:"Lama d'ombra",cost:[70,0],time:16,hp:105,dps:13,spd:4,pierce:.3,ambush:[1.5,3],cd:.9,bldg:1.5,info:'Danno ×1,5 nei primi 3 secondi di scontro. Ignora il 30% della corazza.'}),
+  lama:U({name:"Lama d'ombra",cost:[75,0],time:16,hp:105,dps:13,spd:4,pierce:.3,ambush:[1.5,3],cd:.9,bldg:1.5,info:'Danno ×1,5 nei primi 3 secondi di scontro. Ignora il 30% della corazza.'}),
   spia:U({name:'Spia velata',cost:[70,0],time:16,hp:50,dps:3,spd:4.5,stealth:1,bldg:3,info:'Invisibile finché un nemico non le arriva vicino. Sabota gli edifici (danno ×3).'}),
   /* 18 nov (scelta dell'utente dopo l'indagine Vaelrith: le preghiere avanzavano sempre, ~1000 al minuto 12): parte del costo della Balestriere
      passa dall'oro alle preghiere, 95 oro -> 70 oro + 25 preghiere. La Lama resta solo oro: e' del livello 1, quando le preghiere non ci sono ancora. */
@@ -2062,7 +2062,7 @@ const TYPES={
      Polipo: gittata 5 qui, x1,25 in balance.js = 6,25 come nella tabella. Dove la tabella non dava un valore (cd del Tricheco, dello Squalo, del Granchio,
      della Balena: 1 come quasi tutti i corpo a corpo; Kraken 1,4 come Custode e Fudo; edifici del Kraken 1,5 come le altre elite) vedi SUBMARINER.md */
   labride:U({name:'Labride',cost:[50,0],time:12,hp:76,dps:4,spd:3.4,worker:{carry:6,gt:1.4},bldg:.5,info:'Pesce pulitore in scafandro: raccoglie le alghe e costruisce. Le alghe ricrescono.'}),
-  tricheco:U({name:'Tricheco',cost:[85,0],time:18,hp:170,dps:10,rng:1.4,spd:3.2,arm:.25,pierce:.3,info:'Fanteria di prima linea con alabarda e scudo: l’alabarda ignora il 30% della corazza.'}),
+  tricheco:U({name:'Tricheco',cost:[85,0],time:18,hp:170,dps:11,rng:1.4,spd:3.2,arm:.25,pierce:.3,info:'Fanteria di prima linea con alabarda e scudo: l’alabarda ignora il 30% della corazza.'}),
   polipo:U({name:'Polipo',cost:[85,0],time:18,hp:100,dps:11,rng:5,spd:3.2,cd:1.5,pierce:.3,proj:'javelin',info:'Lancia giavellotti a propulsione dalla distanza: ignorano il 30% della corazza.'}),
   squalo:U({name:'Squalo tigre',lvl:2,cost:[140,0],pop:2,time:22,hp:230,dps:20,spd:4,arm:.1,info:'Veloce e feroce, ma poco protetto.'}),
   granchio:U({name:'Granchio in armatura',lvl:2,cost:[150,0],pop:2,time:24,hp:280,dps:13,rng:1.6,spd:2.6,arm:.4,info:'Corazza pesante e tridente: difficile da abbattere.'}),
@@ -2076,14 +2076,14 @@ const TYPES={
      Avvoltoio: 'mischia' = gittata 1,6 come Balena e Custode (prova del 24 nov: con 1 un'unita' grande non arriva mai a colpire,
      il corpo largo 1,25 la tiene a 1,73 dal bersaglio e la portata e' 1,6). */
   gazza:U({name:'Gazza',cost:[50,0],time:12,hp:74,dps:4,spd:3.6,worker:{carry:7,gt:1.65},bldg:.5,info:'Spazzina svelta: raccoglie i Trinkets e costruisce. I mucchi di Trinkets non ricrescono.'}),
-  corvo:U({name:'Corvo',cost:[80,0],time:16,hp:160,dps:12,rng:1.4,spd:3.8,arm:.1,info:'Fante svelto con la lancia-uncino.'}),
+  corvo:U({name:'Corvo',cost:[75,0],time:16,hp:160,dps:12,rng:1.4,spd:3.8,arm:.1,info:'Fante svelto con la lancia-uncino.'}),
   picchio:U({name:'Picchio',cost:[90,0],time:18,hp:95,dps:11,rng:5.6,spd:3.4,cd:1.2,pierce:.4,proj:'rivet',info:'Tiratore col fucile a rivetti: i rivetti ignorano il 40% della corazza.'}),
   gufo:U({name:'Gufo con aliante',lvl:2,cost:[140,0],pop:2,time:26,hp:140,dps:10,rng:3,spd:4,arm:.1,cd:1.5,aoe:1.3,bldg:1.5,proj:'bomb',fly:1,info:'Plana sopra fiumi, ostacoli e dislivelli e sgancia bombe ad area, più forti sugli edifici. Lo colpiscono solo le torri e le unità che tirano da lontano.'}),
   avvoltoio:U({name:'Avvoltoio corazzato',lvl:2,cost:[200,0],pop:3,time:30,hp:420,dps:15,rng:1.6,spd:2.2,arm:.35,cd:1.2,aoe:1.2,big:1,info:'Bestione corazzato: l’ancora colpisce il bersaglio e, a metà danno, chi gli sta vicino.'}),
   roc:U({name:'Roc',lvl:3,cost:[400,0],pop:6,time:55,hp:1000,dps:32,rng:6,spd:2.2,arm:.35,cd:1.5,pierce:.5,bldg:1.5,proj:'harpoon',big:1,elite:1,info:'L’uccello gigante corazzato con il cannone ad arpioni: ignora metà della corazza ed è forte contro gli edifici. Non vola.'}),
   /* Mooring Mast sganciata (tratto della razza): come il Warden sganciato, ma e' la base: si sposta piano, non attacca; mentre si sposta
      non addestra (salvo la ricerca Rotte dimenticate), non riceve Trinkets e non sale di livello. Vita = quella della base, in proporzione */
-  mastmob:U({name:'Mooring Mast in volo',cost:[0,0],pop:0,time:1,hp:2200,dps:0,spd:1.2,arm:.2,noAtk:1,big:1,mast:1,info:'La base sganciata si sposta piano: non addestra, non riceve Trinkets e non sale di livello finché non si ancora di nuovo (3 secondi).'}),
+  mastmob:U({name:'Mooring Mast in volo',cost:[0,0],pop:0,time:1,hp:2000,dps:0,spd:1.2,arm:.2,noAtk:1,big:1,mast:1,info:'La base sganciata si sposta piano: non addestra, non riceve Trinkets e non sale di livello finché non si ancora di nuovo (3 secondi).'}),
   /* EROI (15 novembre, scelte dell'utente): uno a testa, dalla base principale al livello 2, 1 di popolazione, rinasce dalla base a meta' costo in 45 s.
      Aura solo vicino all'eroe. Euschess (Vaelrith): vicino a un Santuario oscuro produce 2 preghiere ogni 3 s (16 nov, prima ogni 5 s: Vaelrith sotto il 38%). Vita 526 x 1,14 di razza = 600 */
   euschess:U({name:'Euschess',lvl:2,cost:[250,0],pop:1,time:40,hp:526,dps:20,rng:5,spd:3.2,arm:.15,cd:1.3,proj:'hex',max:1,hero:1,px:64,pxk:1.2,aura:{kind:'pray',home:'santuarioO',r:6,every:3,amt:2,col:0xb27aff},info:'Eroina. Duchessa di una delle stirpi più potenti. Vicino a un Santuario oscuro produce 2 preghiere ogni 3 secondi. Una sola; se muore rinasce dalla Sala Velata a metà prezzo.'}),
@@ -2105,11 +2105,11 @@ const TYPES={
      Aura 'buff' sul danno come Oda: ogni 2 s Granchio e Balena entro 6 fanno +6% danno. Lo Squalo tigre non va d'accordo con lei (scelta dell'utente,
      "opzione 2"): non prende quel bonus, ma vicino a lei si butta nella mischia: +10% danno e corazza -0,1 (aura.rival, heroStep in eroi.js, damage in rts.js).
      Disegno PixelLab 64 su tela 92 (eroe_morvane): ritaglio 72, pxk 1,2 x 72/64 = 1,35 (stessa densita' degli altri eroi). */
-  morvane:U({name:'Admiral Morvane',lvl:2,cost:[250,0],pop:1,time:40,hp:600,dps:18,rng:1.8,spd:3,arm:.25,cd:1.3,max:1,hero:1,px:72,pxk:1.35,aura:{kind:'buff',keys:['granchio','balena'],stat:'dmg',pct:.1,r:6,every:2,col:0x6fd6ff,rival:{keys:['squalo'],pct:.1,arm:.1}},info:'Eroe. Ammiraglia dei Submariner, un’orca col quadridente. Granchi e Balene vicini a lei fanno il 10% di danno in più; gli Squali tigre, suoi rivali, vicino a lei fanno il 10% di danno in più ma hanno meno corazza. Una sola; se muore rinasce dalla Coral Citadel a metà prezzo.'}),
+  morvane:U({name:'Admiral Morvane',lvl:2,cost:[250,0],pop:1,time:40,hp:545,dps:18,rng:1.8,spd:3,arm:.25,cd:1.3,max:1,hero:1,px:72,pxk:1.35,aura:{kind:'buff',keys:['granchio','balena'],stat:'dmg',pct:.1,r:6,every:2,col:0x6fd6ff,rival:{keys:['squalo'],pct:.1,arm:.1}},info:'Eroe. Ammiraglia dei Submariner, un’orca col quadridente. Granchi e Balene vicini a lei fanno il 10% di danno in più; gli Squali tigre, suoi rivali, vicino a lei fanno il 10% di danno in più ma hanno meno corazza. Una sola; se muore rinasce dalla Coral Citadel a metà prezzo.'}),
   /* Matron Muninn (Sootwings, 24 nov, passo 2; valori approvati dall'utente il 24 nov 16:15): capoclan e capitano dell'ammiraglia, col bastone dalla punta d'ottone,
      corpo a corpo (gittata 1,6). Aura 'spd' (scelta B): ogni 2 s le unita' Sootwings entro 6 si muovono il 10% piu' veloci (dura 2,5 s; non lei, non la base in volo).
      Disegno PixelLab 56 (eroe_muninn): ritaglio 60, pxk 1,125 = stessa densita' di pixel degli altri eroi (Morvane 1,35 su 72). */
-  muninn:U({name:'Matron Muninn',lvl:2,cost:[250,0],pop:1,time:40,hp:600,dps:16,rng:1.6,spd:3,arm:.15,cd:1.3,max:1,hero:1,px:60,pxk:1.125,aura:{kind:'spd',pct:.1,r:6,every:2,col:0xe0c070},info:'Eroina. Capoclan dei Sootwings e capitano dell’ammiraglia, custodisce i racconti di coloro che furono. Le unità Sootwings vicine a lei si muovono il 10% più veloci. Una sola; se muore rinasce dalla Mooring Mast a metà prezzo.'}),
+  muninn:U({name:'Matron Muninn',lvl:2,cost:[250,0],pop:1,time:40,hp:545,dps:16,rng:1.6,spd:3,arm:.15,cd:1.3,max:1,hero:1,px:60,pxk:1.125,aura:{kind:'spd',pct:.1,r:6,every:2,col:0xe0c070},info:'Eroina. Capoclan dei Sootwings e capitano dell’ammiraglia, custodisce i racconti di coloro che furono. Le unità Sootwings vicine a lei si muovono il 10% più veloci. Una sola; se muore rinasce dalla Mooring Mast a metà prezzo.'}),
   /* Warden sganciato: cammina piano e non spara; si ancora di nuovo in 3 secondi (torna l'edificio Warden) */
   wardenmob:U({name:'Warden sganciato',cost:[0,0],pop:0,time:1,hp:1100,dps:0,spd:1.2,arm:.35,noAtk:1,big:1,info:'Torre in cammino: non spara finché non si ancora di nuovo (3 secondi).'})
 };
@@ -2132,10 +2132,10 @@ Object.assign(TYPES,{
   /* MOSTRI DI ILLUMINA (25 nov, passo 5; scelte dell'utente del 24 nov 23:23-23:35): resti della capitale degli umani, solo in Illumina, sempre dentro la cittadella.
      Di giorno uno dei 2 meccanici (a sorte, uguale nelle due zone), di notte uno dei 2 organici. Valori di partenza approvati il 24 nov alle 23:35.
      Il pipistrello (batfly): vola quando si sposta e si posa per mordere; in volo lo colpiscono solo torri e tiratori come il girocottero (u.air, airSafe in rts.js). */
-  illguard:U({name:'Custode della capitale',race:'mech',mon:1,cost:[0,0],pop:0,hp:1600,dps:15,cd:1.6,rng:2.6,spd:1.8,arm:.35,big:1,px:104,pxk:104/75.3*1.45,mr:2,gr:2.2,info:'Automa guardia a gasolio della vecchia capitale, con scudo e manganello elettrico: nessuna coscienza, solo l’ordine di difendere la piazza. Gira in una sua zona della cittadella e non attacca mai le basi: lento e corazzatissimo. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
-  illsweeper:U({name:'Carro spazzino',race:'mech',mon:1,cost:[0,0],pop:0,hp:1300,dps:16,cd:1.4,rng:2.6,spd:2.6,arm:.2,aoe:1.5,big:1,px:112,pxk:112/75.3*.95,mr:2,gr:2.2,info:'Vecchio mezzo per la pulizia delle strade, impazzito: le spazzole rotanti colpiscono tutto intorno. Gira in una sua zona della cittadella e non attacca mai le basi: colpisce ad area. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
-  illrat:U({name:'Ratto gigante del Black Oil',race:'beast',mon:1,cost:[0,0],pop:0,hp:1050,dps:20,cd:.8,rng:2.6,spd:3.6,arm:.1,big:1,px:104,pxk:104/75.3*.89,mr:2,gr:2.2,info:'Ratto di fogna grande come un pony, zuppo di Black Oil; esce solo di notte. Gira in una sua zona della cittadella e non attacca mai le basi: fragile ma velocissimo, morde di continuo. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
-  illbat:U({name:'Pipistrello di campanile',race:'beast',mon:1,batfly:1,cost:[0,0],pop:0,hp:950,dps:18,cd:1,rng:2.6,spd:3.8,arm:.1,big:1,px:112,pxk:112/75.3*.92,mr:2,gr:2.2,info:'Enorme pipistrello dei campanili della capitale; esce solo di notte. Gira in una sua zona della cittadella e non attacca mai le basi. Vola quando si sposta: in volo lo colpiscono solo torri e tiratori; si posa a terra per mordere, e lì lo colpiscono tutti. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'})});
+  illguard:U({name:'Custode della capitale',race:'mech',mon:1,cost:[0,0],pop:0,hp:1600,dps:15,cd:1.6,rng:2.6,spd:1.8,arm:.35,big:1,px:104,pxk:104/75.3*1.45,mr:2,gr:2.2,info:'Automa guardia a gasolio della vecchia capitale, con scudo e manganello elettrico: nessuna coscienza, solo l’ordine di difendere la piazza. Gira in una sua zona tra le mura e la base e non attacca mai le basi: lento e corazzatissimo. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
+  illsweeper:U({name:'Carro spazzino',race:'mech',mon:1,cost:[0,0],pop:0,hp:1300,dps:16,cd:1.4,rng:2.6,spd:2.6,arm:.2,aoe:1.5,big:1,px:112,pxk:112/75.3*.95,mr:2,gr:2.2,info:'Vecchio mezzo per la pulizia delle strade, impazzito: le spazzole rotanti colpiscono tutto intorno. Gira in una sua zona tra le mura e la base e non attacca mai le basi: colpisce ad area. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
+  illrat:U({name:'Ratto gigante del Black Oil',race:'beast',mon:1,cost:[0,0],pop:0,hp:1050,dps:20,cd:.8,rng:2.6,spd:3.6,arm:.1,big:1,px:104,pxk:104/75.3*.89,mr:2,gr:2.2,info:'Ratto di fogna grande come un pony, zuppo di Black Oil; esce solo di notte. Gira in una sua zona tra le mura e la base e non attacca mai le basi: fragile ma velocissimo, morde di continuo. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'}),
+  illbat:U({name:'Pipistrello di campanile',race:'beast',mon:1,batfly:1,cost:[0,0],pop:0,hp:950,dps:18,cd:1,rng:2.6,spd:3.8,arm:.1,big:1,px:112,pxk:112/75.3*.92,mr:2,gr:2.2,info:'Enorme pipistrello dei campanili della capitale; esce solo di notte. Gira in una sua zona tra le mura e la base e non attacca mai le basi. Vola quando si sposta: in volo lo colpiscono solo torri e tiratori; si posa a terra per mordere, e lì lo colpiscono tutti. Quando cade, la squadra che gli ha fatto più danno riceve 300 della propria risorsa principale.'})});
 const BB=o=>Object.assign({lvl:1,arm:.2,trains:[],cost:[100,0],time:30},o);
 const BT={
   fornace:BB({name:'Fornace Madre',role:'hq',hp:2600,r:3.7,trains:['minatore','ardun'],drop:1,model:'hq',info:'Base principale: deposito del magma, sale di livello. Con i minatori al lavoro produce Black Oil.'}),
@@ -2273,7 +2273,7 @@ const COMP={durmagh:{fuciliere:3,cuirassier:1,lanciafiamme:2,mortaio:1.2,magmina
   sootwings:{corvo:3,picchio:2.2,gufo:1,avvoltoio:1.5,roc:1}};
 
 /* ritocchi di bilanciamento dopo le simulazioni IA contro IA */
-const RACE_HP_DEFAULT={durmagh:.91,thalren:1.05,vaelrith:1.14,scrappers:.91,tetsuryu:1.1};
+const RACE_HP_DEFAULT={durmagh:.91,thalren:1.05,vaelrith:1.14,scrappers:.91,tetsuryu:1.1,submariner:1.1,sootwings:1.1}; /* 27 nov: submariner 1.1 (Morvane 545 x 1,1 = 600); sootwings 1.1 in prova (Muninn 545, base in volo 2000 x 1,1 = 2200) */
 Object.assign(BT.bastione,{cost:[160,0],hp:1500,def:{dps:16,rng:7.5,cd:1.3,proj:'bullet'}});
 Object.assign(TYPES.fuciliere,{hp:200}); /* prezzo: solo in data.js (125) */
 Object.assign(TYPES.mortaio,{dps:14});
@@ -2308,6 +2308,8 @@ TYPES.cogsoldato.rng=4.5;
 Object.assign(TYPES.cogsoldato,{splash:.25,info:'Trombone a rosa: colpisce il bersaglio e, a un quarto del danno, chi gli sta attaccato.'});
 /* 11 novembre notte, scelta dell'utente dopo il torneo 2 (Cogborn 73,8%, soldato 15190 danni a partita): secondo ritocco, danno dell'Automa soldato 9 -> 7 */
 TYPES.cogsoldato.dps=7;
+/* 27 novembre: Automa soldato danno 7 -> 8 (Cogborn 36% -> 68%, tools/cogborn_soldato8), poi a meta strada 7,5 (utente senza preferenza: scelta di Claude) */
+TYPES.cogsoldato.dps=7.5;
 /* richiesta: +1% raccolta Durmagh */
 TYPES.minatore.worker.carry=10.1;
 
@@ -4714,8 +4716,10 @@ function startGame(){clearWorld();if(typeof HSTAT!=='undefined')HSTAT=[{n:0,d:0,
   $('#matchup').textContent=LTf('{0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name);
   document.documentElement.style.setProperty('--pc',RACES[teams[ME].race].pc);document.documentElement.style.setProperty('--sc',RACES[teams[ME].race].sc||'#888');
   buildMiniTerrain();
-  if(picks.mode==='watch')toast(LTf('Osservi: {0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name));
-  else toast((picks.foe==='random'?LTf('Avversario estratto: {0}. ',RACES[foeRace].name):'')+LT('I lavoratori sono già al lavoro sui giacimenti'));}
+  /* 27 nov: nome della mappa nell'avviso d'inizio (scelta dell'utente: "Valley of Bridges" per la prima mappa, uguale in italiano e in inglese come Illumina) */
+  const MAPN=LTf('Mappa: {0}. ',MG.ill?'Illumina':'Valley of Bridges');
+  if(picks.mode==='watch')toast(MAPN+LTf('Osservi: {0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name),4.5);
+  else toast(MAPN+(picks.foe==='random'?LTf('Avversario estratto: {0}. ',RACES[foeRace].name):'')+LT('I lavoratori sono già al lavoro sui giacimenti'),4.5);}
 function finish(){ended=true;const w=teams.find(t=>!t.lost);const secs=Math.round(now);
   const meWin=w&&w.id===ME;if(picks.mode==='play')sndMine(meWin?'win':'lose');$('#endTitle').textContent=picks.mode==='watch'?(w?LTf('Vincono i {0}',RACES[w.race].name):LT('Pareggio')):LT(meWin?'Vittoria':w?'Sconfitta':'Pareggio');
   $('#endEyebrow').textContent=LTf('{0} contro {1}',RACES[teams[0].race].name,RACES[teams[1].race].name)+' · '+Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
@@ -5508,7 +5512,7 @@ let timEls=[],satShown=new Set();function drawTimers(){const box=$('#timl');if(!
     e.style.left=Math.round(p.x)+'px';e.style.top=Math.round(Math.max(118,p.y-dy))+'px';e.style.display='';i++;}}
   for(;i<timEls.length;i++)timEls[i].style.display='none';}
 let toastT=0;function placeToast(){const t=$('#toast'),tp=$('#top');if(!tp||!tp.children||!tp.children.length||typeof getComputedStyle!=='function')return;let y=0;for(const c of Array.from(tp.children)){if(c.hidden||getComputedStyle(c).display==='none')continue;y=Math.max(y,c.getBoundingClientRect().bottom);}if(y>0)t.style.top=Math.round(y+8)+'px';}
-function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;placeToast();toastT=3.2;}const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg,dur){const t=$('#toast');t.textContent=msg;t.hidden=false;placeToast();toastT=dur||3.2;}const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* icone PixelLab delle risorse (EXTICON in pxdata.js): una classe CSS per icona, cosi' l'immagine sta una volta sola nella pagina; se l'icona manca resta il pallino colorato */
 const ICOK={};(function(){if(typeof EXTICON==='undefined'||typeof document==='undefined'||!document.head)return;let css='';for(const k in EXTICON){ICOK[k]=1;css+='.ico-'+k+'{background-image:url('+EXTICON[k]+')}';}const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);})();
 function ico(k,c){return ICOK[k]?'<i class="ico ico-'+k+'"></i>':'<i class="d" style="background:'+c+'"></i>';}
@@ -5591,7 +5595,7 @@ $('#cmd').addEventListener('click',e=>{const b=e.target.closest('.cb');if(!b)ret
 function bar(fr,col){return '<div class="bar"><i style="width:'+Math.round(Math.max(0,Math.min(1,fr))*100)+'%;background:'+col+'"></i></div>';}
 function renderSel(){const el=$('#sel');const sel=[...selection].filter(e=>!e.dead);let h;
   if(placing){const T=BT[placing.key];h='<div class="ttl">'+esc(T.name)+'</div><div class="hint">'+esc(T.info)+'</div><div class="hint">'+(placing.touch?LT('Tocca una zona verde per scegliere il posto, poi premi Conferma.'):LT('Clic sul terreno per posizionarlo, tasto destro per annullare.'))+'</div>';}
-  else if(!sel.length){const hintTxt=LT(picks.mode==='watch'?'Stai osservando due IA. Usa la minimappa e la velocità per seguire la partita; tocca un’unità o un edificio per vederne i dati.':coarse?'Tocca un lavoratore per costruire, un edificio per produrre unità. Con le unità selezionate tocca un nemico per attaccare o il terreno per avanzare.':'Seleziona un lavoratore per costruire, un edificio per produrre. Con le unità selezionate clic su un nemico per attaccare, sul terreno per avanzare.');h='';if(!window.__hintShown){window.__hintShown=1;toast(hintTxt);}}
+  else if(!sel.length){const hintTxt=LT(picks.mode==='watch'?'Stai osservando due IA. Usa la minimappa e la velocità per seguire la partita; tocca un’unità o un edificio per vederne i dati.':coarse?'Tocca un lavoratore per costruire, un edificio per produrre unità. Con le unità selezionate tocca un nemico per attaccare o il terreno per avanzare.':'Seleziona un lavoratore per costruire, un edificio per produrre. Con le unità selezionate clic su un nemico per attaccare, sul terreno per avanzare.');h='';if(!window.__hintShown){window.__hintShown=1;if(toastT>0)window.__hintNext=hintTxt;else toast(hintTxt);}}
   else if(sel[0].isB){const b=sel[0],T=b.T,mine=b.team===ME||picks.mode==='watch';
     h='<div class="ttl">'+esc(T.name)+(b.isX?' <span class="foe">'+LT('ostacolo')+'</span>':b.team!==ME&&picks.mode!=='watch'?' <span class="foe">'+LT('nemico')+'</span>':'')+'</div>'+bar(b.built?b.hp/b.maxhp:b.prog,b.built?'#8fd16a':'#6fb3e6')+'<div class="sub">'+(b.built?fmt(b.hp)+' / '+fmt(b.maxhp)+' '+LT('vita'):LTf('In costruzione · {0}%',Math.round(b.prog*100))+(bldLeft(b)>=0?' · '+fmtLeft(bldLeft(b)):''))+'</div>';
     if(mine&&b.queue.length)h+='<div class="queue">'+b.queue.map((it,i)=>'<button type="button" class="qi" data-q="'+i+'" title="'+LT('Annulla e recupera le risorse')+'">'+(it.kind==='unit'?'<img alt="" src="'+icon(it.key,b.team)+'">':'<span class="gl">'+(it.kind==='level'?LT('LIV')+' '+it.lvl:RESEARCH[it.r].glyph)+'</span>')+(i===0?'<i style="width:'+Math.round(it.t/it.time*100)+'%"></i><b class="qt">'+fmtLeft(it.time-it.t)+'</b>':'')+'</button>').join('')+'</div>';
@@ -5651,7 +5655,7 @@ function frame(ts){const raw=(ts-last)/1000;const rdt=Math.min(.05,raw);last=ts;
   const rb=ownBldSel();if(rb&&rb.rally){rallyFlag.visible=true;rallyFlag.position.set(rb.rally.x,gy(rb.rally.x,rb.rally.z),rb.rally.z);}else rallyFlag.visible=false;
   uiT-=rdt;if(gameOn&&(selDirty||uiT<=0)){renderRes();renderSel();renderCmd();selDirty=false;uiT=.3;}
   miniT-=rdt;if(gameOn&&miniT<=0){drawMini();miniT=.2;}
-  if(toastT>0){placeToast();toastT-=rdt;if(toastT<=0)$('#toast').hidden=true;}
+  if(toastT>0){placeToast();toastT-=rdt;if(toastT<=0){$('#toast').hidden=true;if(window.__hintNext){const h=window.__hintNext;window.__hintNext=null;toast(h);}}} /* 27 nov: il primo consiglio aspetta la fine dell'avviso d'inizio col nome della mappa */
   satT-=rdt;if(satT<=0){satT=.2;drawSat();}
   updateLightPool(rdt);shadowTick();CONTACT.update(scene,rdt);
   const tL1=performance.now();render();const tL2=performance.now();PERF.logic+=(tL1-tL0-PERF.logic)*.05;PERF.draw+=(tL2-tL1-PERF.draw)*.05;
