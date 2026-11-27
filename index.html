@@ -4147,6 +4147,9 @@ function formationSpots(list,px,pz){const n=list.length,cols=Math.ceil(Math.sqrt
     if(!spot)spot=G[e.i];done.push({x:spot.x,z:spot.z,ur:e.u.ur});out[e.i]={x:spot.x,z:spot.z};}
   return out;}
 function goTo(u,x,z,dt){const dist=Math.hypot(x-u.pos.x,z-u.pos.z);if(dist<.05)return dist;
+  /* CODA ALLE STRETTOIE (27 nov): un'unita' grande in fila a una breccia o a un ponte resta ferma dietro le compagne; dopo ~9 s il controllo
+     annullava l'ordine e lei restava di qua per sempre. Ora, se la meta e' ancora raggiungibile, aspetta un attimo e riprova (al massimo 2 volte). */
+  if(u.order&&u.order.wt&&now<u.order.wt){u.moving=false;return dist;}
   if(now-(u.skLast||-9)>.2)u.sk=null;u.skLast=now;
   if(!u.sk)u.sk={x:u.pos.x,z:u.pos.z,t:now};else if(now-u.sk.t>=1.5){const m=Math.hypot(u.pos.x-u.sk.x,u.pos.z-u.sk.z);
     /* 3 novembre: posto dentro il bordo di un ostacolo: l'unita' viene spinta fuori e si ferma tra 0,4 e 0,6 dal posto, ne' arrivata ne' bloccata: un ordine di solo movimento non finiva mai */
@@ -4154,7 +4157,7 @@ function goTo(u,x,z,dt){const dist=Math.hypot(x-u.pos.x,z-u.pos.z);if(dist<.05)r
        azzeravano il conteggio e l'ordine non finiva mai (girava attorno al posto per minuti). Arrivo entro 1,5 (corpo largo 1,5) */
     const big=u.ur>=1,noProg=big&&dist<3&&u.sk.d!==undefined&&u.sk.d-dist<.3,st_=m<.3||noProg,arr=big?1.5:.6;
     if(st_&&dist<=arr&&u.order&&u.order.kind==='move'&&u.order.x===x&&u.order.z===z){u.order=null;u.path=null;u.stuckN=0;u.sk=null;return 0;}
-    if(st_&&dist>.6){u.stuckN=(u.stuckN||0)+1;if(u.stuckN>=6&&u.order&&(u.order.kind==='move'||u.order.kind==='amove')){u.order=null;u.path=null;u.stuckN=0;u.sk=null;return 0;}unstick(u,x,z);}else u.stuckN=0;
+    if(st_&&dist>.6){u.stuckN=(u.stuckN||0)+1;if(u.stuckN>=6&&big&&u.order&&u.order.kind==='move'&&(u.order.rt||0)<2&&findPathB(u.pos.x,u.pos.z,x,z)){u.order.rt=(u.order.rt||0)+1;u.order.wt=now+1+GR()*2;u.stuckN=0;u.path=null;u.sk=null;return dist;}if(u.stuckN>=6&&u.order&&(u.order.kind==='move'||u.order.kind==='amove')){u.order=null;u.path=null;u.stuckN=0;u.sk=null;return 0;}unstick(u,x,z);}else u.stuckN=0;
     u.sk={x:u.pos.x,z:u.pos.z,t:now,d:dist};}
   if(!u.path||Math.abs(u.pgx-x)+Math.abs(u.pgz-z)>1.2||now>u.repath){u.pgx=x;u.pgz=z;u.repath=now+1.2+GR()*.5;
     u.path=pathFor(u,x,z);}
